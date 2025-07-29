@@ -6,7 +6,7 @@ operate within a single container (e.g. under Podman) to minimise
 resource usage. The scheduler assigns buses greedily so that the
 minimum number of buses are used for a given set of runs and takes
 into account the daily driving limits defined by either EU (assimilated)
-rules or the GB domestic drivers’ hours rules【830846819082181†L114-L122】【344526805669237†L186-L192】.
+rules or the GB domestic drivers’ hours rule.
 
 ## Features
 
@@ -37,40 +37,21 @@ rules or the GB domestic drivers’ hours rules【830846819082181†L114-L122】
   application. No separate database container is required – all data
   lives in memory for the duration of the session.
 
-## Running locally
+## Running with Podman
 
-1. **Install dependencies**: Create a virtual environment, then run
+To build the image:
 
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-2. **Start the application**:
-
-   ```bash
-   python app.py
-   ```
-
-   By default the Flask development server listens on `http://0.0.0.0:5000`.
-
-3. Open your browser to `http://localhost:5000` and begin entering
-   inbound and outbound runs.
-
-## Building and running with Podman/Docker
-
-To build the image (e.g. with Podman):
-
-```bash
+```pwsh
 podman build -t bus-scheduler .
 ```
 
-Then run it:
+To run the container:
 
-```bash
-podman run --rm -p 5000:5000 bus-scheduler
+```pwsh
+podman run --rm -p 5620:5620 bus-scheduler
 ```
 
-Navigate to `http://localhost:5000` in your browser to use the tool.
+Then open your browser to `http://localhost:5620` to use the tool.
 
 ## Development considerations
 
@@ -85,8 +66,8 @@ Navigate to `http://localhost:5000` in your browser to use the tool.
   weeks.
 * **Extensibility** – The current design deliberately keeps the data
   model simple. If you wish to support additional constraints (such as
-  mandatory breaks after 4.5 hours of driving under EU rules【830846819082181†L124-L135】 or
-  5.5 hours under GB domestic rules【344526805669237†L195-L207】) or to record which bus types are
+  mandatory breaks after 4.5 hours of driving under EU rules or
+  5.5 hours under GB domestic rules) or to record which bus types are
   eligible for particular runs, the scheduling algorithm and form
   schema will need to evolve accordingly.
 

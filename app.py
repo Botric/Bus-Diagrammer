@@ -88,45 +88,63 @@ class BusAssignment:
         return self.runs[-1].end if self.runs else datetime.min
 
 
-def schedule_buses(runs: List[Run], max_daily_hours: float) -> List[BusAssignment]:
-    """Assign runs to buses using a greedy algorithm.
+def get_breaks_for_bus(bus_runs, regime):
+    """Return a list of (break_time, break_length_minutes) for a bus's runs based on regime."""
+    breaks = []
+    continuous_limit = 4.5 if regime == 'EU' else 5.5  # hours
+    break_length = 45 if regime == 'EU' else 30  # minutes
+    driving_since_last_break = 0.0
+    last_break_time = None
+    last_run_end = None
+    for run in bus_runs:
+        driving_since_last_break += run.duration_hours
+        last_run_end = run.end
+        if driving_since_last_break >= continuous_limit:
+            # Insert break after this run
+            break_time = last_run_end
+            breaks.append((break_time, break_length))
+            driving_since_last_break = 0.0
+            last_break_time = break_time
+            # Advance last_run_end by break_length to ensure next run starts after break
+            last_run_end += timedelta(minutes=break_length)
+    return breaks
 
-    Runs are sorted by start time. For each run we attempt to fit it onto
-    an existing bus whose last run finishes before the new run starts and
-    whose total driving time plus the run duration does not exceed
-    ``max_daily_hours``. If no such bus exists, a new bus is created.
 
-    Parameters
-    ----------
-    runs:
-        A list of ``Run`` objects to schedule.
-    max_daily_hours:
-        Maximum total driving hours allowed per bus. EU rules allow 9
-        hours per day (extendable twice per week to 10)【830846819082181†L114-L122】 while GB domestic rules
-        allow 10 hours【344526805669237†L186-L190】.
-
-    Returns
-    -------
-    List[BusAssignment]
-        A list of bus assignments.
-    """
-    # Sort runs by start time to schedule as early as possible
-    runs_sorted = sorted(runs, key=lambda r: (r.start, r.end))
+def schedule_buses(runs: List[Run], _max_daily_hours: float) -> List[BusAssignment]:
+    """Assign runs to buses, alternating inbound/outbound, allowing multiple runs per bus. Ensures breaks are respected and no run overlaps with a break."""
+    all_runs = sorted(runs, key=lambda r: r.start)
     buses: List[BusAssignment] = []
+    assigned = set()
+    regime = 'EU' if any(r for r in runs if r.section == 'EU') else 'GB'
+    continuous_limit = 4.5 if regime == 'EU' else 5.5
+    break_length = 45 if regime == 'EU' else 30
 
-    for run in runs_sorted:
-        assigned = False
-        # Try to fit run onto an existing bus
+    for run in all_runs:
+        if run.run_id in assigned:
+            continue
+        best_bus = None
         for bus in buses:
-            if bus.last_end_time <= run.start and (bus.total_driving_hours + run.duration_hours) <= max_daily_hours:
-                bus.runs.append(run)
-                assigned = True
+            # Calculate next available time for this bus, considering breaks
+            driving_since_last_break = 0.0
+            last_end = None
+            for r in bus.runs:
+                driving_since_last_break += r.duration_hours
+                last_end = r.end
+                if driving_since_last_break >= continuous_limit:
+                    last_end += timedelta(minutes=break_length)
+                    driving_since_last_break = 0.0
+            # Ensure run does not start during a break
+            if last_end is None or last_end <= run.start:
+                best_bus = bus
                 break
-        # If it doesn't fit anywhere, start a new bus
-        if not assigned:
+        if best_bus:
+            best_bus.runs.append(run)
+            assigned.add(run.run_id)
+        else:
             new_bus = BusAssignment(bus_id=len(buses) + 1)
             new_bus.runs.append(run)
             buses.append(new_bus)
+            assigned.add(run.run_id)
     return buses
 
 
@@ -185,6 +203,10 @@ def handle_schedule() -> str:
 
     # Compute schedule
     buses = schedule_buses(runs, max_hours)
+    # Compute breaks for each bus
+    bus_breaks = {}
+    for bus in buses:
+        bus_breaks[bus.bus_id] = get_breaks_for_bus(bus.runs, regulation)
 
     # Build list of all stops across runs for table display
     all_stops = []  # maintain order of appearance
@@ -198,8 +220,8 @@ def handle_schedule() -> str:
     # Sort runs for display by run_id for consistent ordering
     runs_sorted = sorted(runs, key=lambda r: r.run_id)
 
-    return render_template('schedule.html', runs=runs_sorted, buses=buses, all_stops=all_stops, regulation=regulation)
+    return render_template('schedule.html', runs=runs_sorted, buses=buses, all_stops=all_stops, regulation=regulation, bus_breaks=bus_breaks)
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5620, debug=True)

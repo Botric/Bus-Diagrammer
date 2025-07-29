@@ -72,23 +72,87 @@
                 {% for run in bus.runs %}
                     {{ run.run_id }} ({{ run.start.strftime('%H:%M') }}–{{ run.end.strftime('%H:%M') }}){% if not loop.last %}, {% endif %}
                 {% endfor %}
+                {% if bus_breaks[bus.bus_id] %}
+                    <br><em>Breaks:</em>
+                    {% for brk in bus_breaks[bus.bus_id] %}
+                        <span>Break at {{ brk[0].strftime('%H:%M') }} for {{ brk[1] }} min{% if not loop.last %}, {% endif %}</span>
+                    {% endfor %}
+                {% endif %}
             </li>
             {% endfor %}
         </ul>
 
         <h2>Timetable (Stops vs Runs)</h2>
+        <h3>Inbound Runs</h3>
         <table>
             <tr>
                 <th>Stop</th>
-                {% for run in runs %}
-                    <th>{{ run.run_id }}</th>
+                {% for run in runs if run.section == 'inbound' %}
+                    {% set bus_id = None %}
+                    {% for bus in buses %}
+                        {% if run in bus.runs %}{% set bus_id = bus.bus_id %}{% endif %}
+                    {% endfor %}
+                    {% if bus_id %}
+                        {% set color = '#%02x%02x%02x'|format((bus_id * 70) % 200 + 55, (bus_id * 120) % 200 + 55, (bus_id * 200) % 200 + 55) %}
+                    {% else %}
+                        {% set color = '#ffffff' %}
+                    {% endif %}
+                    <th style="background-color: {{ color }}; color: #222;">{{ run.run_id }}</th>
                 {% endfor %}
             </tr>
             {% for stop in all_stops %}
             <tr>
                 <td>{{ stop }}</td>
-                {% for run in runs %}
-                    <td>{% if stop in run.stops %}{{ run.stops.index(stop) + 1 }}{% endif %}</td>
+                {% for run in runs if run.section == 'inbound' %}
+                    {% set bus_id = None %}
+                    {% for bus in buses %}
+                        {% if run in bus.runs %}{% set bus_id = bus.bus_id %}{% endif %}
+                    {% endfor %}
+                    {% if bus_id %}
+                        {% set color = '#%02x%02x%02x'|format((bus_id * 70) % 200 + 55, (bus_id * 120) % 200 + 55, (bus_id * 200) % 200 + 55) %}
+                    {% else %}
+                        {% set color = '#ffffff' %}
+                    {% endif %}
+                    <td style="background-color: {{ color }}; color: #222; font-weight: bold;">
+                        {% if stop in run.stops %}{{ run.stops.index(stop) + 1 }}{% endif %}
+                    </td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </table>
+        <h3>Outbound Runs</h3>
+        <table>
+            <tr>
+                <th>Stop</th>
+                {% for run in runs if run.section == 'outbound' %}
+                    {% set bus_id = None %}
+                    {% for bus in buses %}
+                        {% if run in bus.runs %}{% set bus_id = bus.bus_id %}{% endif %}
+                    {% endfor %}
+                    {% if bus_id %}
+                        {% set color = '#%02x%02x%02x'|format((bus_id * 70) % 200 + 55, (bus_id * 120) % 200 + 55, (bus_id * 200) % 200 + 55) %}
+                    {% else %}
+                        {% set color = '#ffffff' %}
+                    {% endif %}
+                    <th style="background-color: {{ color }}; color: #222;">{{ run.run_id }}</th>
+                {% endfor %}
+            </tr>
+            {% for stop in all_stops %}
+            <tr>
+                <td>{{ stop }}</td>
+                {% for run in runs if run.section == 'outbound' %}
+                    {% set bus_id = None %}
+                    {% for bus in buses %}
+                        {% if run in bus.runs %}{% set bus_id = bus.bus_id %}{% endif %}
+                    {% endfor %}
+                    {% if bus_id %}
+                        {% set color = '#%02x%02x%02x'|format((bus_id * 70) % 200 + 55, (bus_id * 120) % 200 + 55, (bus_id * 200) % 200 + 55) %}
+                    {% else %}
+                        {% set color = '#ffffff' %}
+                    {% endif %}
+                    <td style="background-color: {{ color }}; color: #222; font-weight: bold;">
+                        {% if stop in run.stops %}{{ run.stops.index(stop) + 1 }}{% endif %}
+                    </td>
                 {% endfor %}
             </tr>
             {% endfor %}

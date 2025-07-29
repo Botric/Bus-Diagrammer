@@ -14,7 +14,7 @@ COPY . .
 USER appuser
 
 # Expose port 5000 for the Flask development server
-EXPOSE 5000
+EXPOSE 5620
 
 # Run the application
 CMD ["python", "app.py"]

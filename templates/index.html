@@ -110,11 +110,15 @@
             </select>
 
             <h2>Inbound Runs</h2>
+            <textarea id="inbound-bulk" rows="4" style="width:100%;margin-bottom:0.5rem" placeholder="Paste CSV or Excel block for inbound runs"></textarea>
+            <button type="button" class="add-btn" onclick="bulkPaste('inbound')">Bulk paste inbound runs</button>
             <div id="inbound-container" class="runs-section"></div>
             <button type="button" class="add-btn" onclick="addRun('inbound')">Add inbound run</button>
             <input type="hidden" id="inbound-count" name="inbound_count" value="0" />
 
             <h2>Outbound Runs</h2>
+            <textarea id="outbound-bulk" rows="4" style="width:100%;margin-bottom:0.5rem" placeholder="Paste CSV or Excel block for outbound runs"></textarea>
+            <button type="button" class="add-btn" onclick="bulkPaste('outbound')">Bulk paste outbound runs</button>
             <div id="outbound-container" class="runs-section"></div>
             <button type="button" class="add-btn" onclick="addRun('outbound')">Add outbound run</button>
             <input type="hidden" id="outbound-count" name="outbound_count" value="0" />
@@ -167,6 +171,44 @@
             const index = parseInt(row.getAttribute('data-index'), 10);
             row.parentElement.removeChild(row);
             // We don't renumber existing runs; the backend ignores missing indices.
+        }
+
+        function bulkPaste(section) {
+            const bulkId = section + '-bulk';
+            const containerId = section + '-container';
+            const countInputId = section + '-count';
+            const bulkText = document.getElementById(bulkId).value.trim();
+            if (!bulkText) return;
+            // Parse CSV (tab or comma separated)
+            const lines = bulkText.split(/\r?\n/).filter(l => l.trim());
+            if (lines.length < 2) return;
+            // Remove any empty lines
+            // First line: headers (first cell is 'ID' or similar, rest are run names)
+            const headers = lines[0].split(/,|\t/).map(h => h.trim());
+            const stopRows = lines.slice(1);
+            // Each column after the first is a run
+            for (let col = 1; col < headers.length; col++) {
+                let stops = [];
+                let start = '';
+                let end = '';
+                for (let row = 0; row < stopRows.length; row++) {
+                    const cells = stopRows[row].split(/,|\t/);
+                    const stopName = cells[0] ? cells[0].trim() : '';
+                    const time = cells[col] ? cells[col].trim() : '';
+                    if (stopName && time) {
+                        stops.push(stopName);
+                        if (!start) start = time;
+                        end = time;
+                    }
+                }
+                if (!start || !end) continue;
+                addRun(section);
+                const idx = section === 'inbound' ? inboundCount - 1 : outboundCount - 1;
+                document.querySelector(`[name='${section}_run_${idx}_name']`).value = headers[col];
+                document.querySelector(`[name='${section}_run_${idx}_start']`).value = start;
+                document.querySelector(`[name='${section}_run_${idx}_end']`).value = end;
+                document.querySelector(`[name='${section}_run_${idx}_stops']`).value = stops.join('\n');
+            }
         }
     </script>
 </body>
