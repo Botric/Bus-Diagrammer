@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bus Scheduler</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        header {
+            background-color: #3f51b5;
+            color: white;
+            padding: 1rem;
+        }
+        .container {
+            padding: 1rem;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        h2 {
+            margin-top: 2rem;
+        }
+        .runs-section {
+            margin-bottom: 2rem;
+        }
+        .run-row {
+            border: 1px solid #ddd;
+            padding: 0.5rem;
+            margin-bottom: 0.5rem;
+            border-radius: 4px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            align-items: flex-start;
+        }
+        .run-row input[type="text"],
+        .run-row input[type="time"],
+        .run-row textarea {
+            padding: 0.3rem;
+            font-size: 0.9rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .run-row textarea {
+            resize: vertical;
+            min-height: 2rem;
+        }
+        .run-row button.remove {
+            background-color: #e53935;
+            color: white;
+            border: none;
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .run-row button.remove:hover {
+            background-color: #c62828;
+        }
+        .add-btn {
+            background-color: #4caf50;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 0.5rem;
+        }
+        .add-btn:hover {
+            background-color: #388e3c;
+        }
+        .submit-btn {
+            background-color: #3f51b5;
+            color: white;
+            border: none;
+            padding: 0.7rem 1.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 1rem;
+            font-size: 1rem;
+        }
+        .submit-btn:hover {
+            background-color: #303f9f;
+        }
+        select {
+            padding: 0.4rem;
+            font-size: 1rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        label {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Bus Scheduling Tool</h1>
+        <p>Enter inbound and outbound runs to generate an efficient bus roster.</p>
+    </header>
+    <div class="container">
+        <form method="post" action="{{ url_for('handle_schedule') }}">
+            <label for="regulation">Regulatory regime:</label>
+            <select id="regulation" name="regulation">
+                <option value="GB">GB domestic (10 hours max)</option>
+                <option value="EU">EU assimilated (9 hours max)</option>
+            </select>
+
+            <h2>Inbound Runs</h2>
+            <div id="inbound-container" class="runs-section"></div>
+            <button type="button" class="add-btn" onclick="addRun('inbound')">Add inbound run</button>
+            <input type="hidden" id="inbound-count" name="inbound_count" value="0" />
+
+            <h2>Outbound Runs</h2>
+            <div id="outbound-container" class="runs-section"></div>
+            <button type="button" class="add-btn" onclick="addRun('outbound')">Add outbound run</button>
+            <input type="hidden" id="outbound-count" name="outbound_count" value="0" />
+
+            <button type="submit" class="submit-btn">Generate Schedule</button>
+        </form>
+    </div>
+
+    <script>
+        let inboundCount = 0;
+        let outboundCount = 0;
+
+        function addRun(section) {
+            const container = document.getElementById(section + '-container');
+            const countInput = document.getElementById(section + '-count');
+            const index = section === 'inbound' ? inboundCount++ : outboundCount++;
+            countInput.value = section === 'inbound' ? inboundCount : outboundCount;
+
+            const row = document.createElement('div');
+            row.className = 'run-row';
+            row.setAttribute('data-index', index);
+            row.setAttribute('data-section', section);
+            row.innerHTML = `
+                <div style="flex: 1 1 100px; min-width: 120px;">
+                    <label>Run name:</label><br />
+                    <input type="text" name="${section}_run_${index}_name" placeholder="Run identifier" required />
+                </div>
+                <div style="flex: 1 1 100px; min-width: 120px;">
+                    <label>Start time:</label><br />
+                    <input type="time" name="${section}_run_${index}_start" required />
+                </div>
+                <div style="flex: 1 1 100px; min-width: 120px;">
+                    <label>End time:</label><br />
+                    <input type="time" name="${section}_run_${index}_end" required />
+                </div>
+                <div style="flex: 2 1 200px; min-width: 200px;">
+                    <label>Stops (one per line):</label><br />
+                    <textarea name="${section}_run_${index}_stops" rows="3" placeholder="Stop A\nStop B\nStop C"></textarea>
+                </div>
+                <div style="align-self: center;">
+                    <button type="button" class="remove" onclick="removeRun(this)">Remove</button>
+                </div>
+            `;
+            container.appendChild(row);
+        }
+
+        function removeRun(btn) {
+            const row = btn.parentElement.parentElement;
+            const section = row.getAttribute('data-section');
+            const index = parseInt(row.getAttribute('data-index'), 10);
+            row.parentElement.removeChild(row);
+            // We don't renumber existing runs; the backend ignores missing indices.
+        }
+    </script>
+</body>
+</html>
