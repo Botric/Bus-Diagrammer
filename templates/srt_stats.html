@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SRT Database Statistics - Bus Scheduler</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }        .container {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 4px solid #3498db;
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-align: center;
+        }
+        h2 {
+            color: #34495e;
+            margin: 30px 0 20px 0;
+            font-size: 1.8em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        h2::before {
+            content: "🔍";
+            font-size: 0.8em;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #74b9ff, #0984e3);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(116, 185, 255, 0.3);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(116, 185, 255, 0.4);
+        }
+        .stat-number {
+            font-size: 3em;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .stat-label {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        .search-container {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 15px;
+            margin: 30px 0;
+            border-left: 5px solid #3498db;
+        }
+        .search-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto auto;
+            gap: 15px;
+            align-items: end;
+        }
+        .search-input {
+            padding: 12px 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s ease;
+        }
+        .search-input:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+        .search-btn {
+            padding: 12px 25px;
+            background: linear-gradient(135deg, #00b894, #00a085);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        .search-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 184, 148, 0.3);
+        }
+        .clear-btn {
+            padding: 12px 20px;
+            background: #95a5a6;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.3s ease;
+        }
+        .clear-btn:hover {
+            background: #7f8c8d;
+        }        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        th, td {
+            padding: 15px 20px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        th {
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            color: white;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 0.9em;
+        }
+        tr:hover {
+            background-color: #f0f8ff;
+            transform: scale(1.01);
+            transition: all 0.2s ease;
+        }
+        tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        .stations-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .station-item {
+            background: linear-gradient(135deg, #00b894, #00a085);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            font-weight: bold;
+            box-shadow: 0 5px 15px rgba(0, 184, 148, 0.3);
+            transition: all 0.3s ease;
+        }
+        .station-item:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 8px 25px rgba(0, 184, 148, 0.4);
+        }
+        .navigation {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid #eee;
+            text-align: center;
+        }
+        .nav-link {
+            display: inline-block;
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+            color: white;
+            text-decoration: none;
+            border-radius: 25px;
+            margin: 0 10px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(108, 92, 231, 0.3);
+        }
+        .nav-link:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(108, 92, 231, 0.4);
+            text-decoration: none;
+            color: white;
+        }
+        .no-data {
+            text-align: center;
+            padding: 60px 20px;
+            color: #7f8c8d;
+            font-style: italic;
+            background: #f8f9fa;
+            border-radius: 15px;
+            border: 3px dashed #bdc3c7;
+        }
+        .no-data h2 {
+            color: #95a5a6;
+            margin-bottom: 20px;
+        }
+        .filter-info {
+            background: #e8f4fd;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 4px solid #3498db;
+            font-style: italic;
+        }
+        .label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .duration-badge {
+            background: linear-gradient(135deg, #fd79a8, #e84393);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+        .route-cell {
+            font-weight: bold;
+            color: #2c3e50;
+        }        .date-cell {
+            color: #7f8c8d;
+            font-size: 0.9em;
+        }
+        
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .search-row {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            .stations-list {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            }
+            table {
+                font-size: 0.9em;
+            }
+            th, td {
+                padding: 10px 8px;
+            }
+            .container {
+                padding: 20px;
+            }
+        }
+        
+        /* Loading and interaction states */
+        .search-btn:active {
+            transform: translateY(0px);
+        }
+        
+        .station-item:active {
+            transform: translateY(0px) scale(1);
+        }
+        
+        /* Table enhancements */
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+        
+        /* Improved focus states */
+        .search-input:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+        
+        .search-btn:focus,
+        .clear-btn:focus,
+        .nav-link:focus {
+            outline: 3px solid rgba(52, 152, 219, 0.3);
+            outline-offset: 2px;
+        }
+          /* Additional enhancements */
+        .clear-btn {
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .clear-btn:hover {
+            text-decoration: none;
+        }
+        
+        /* Clickable stations */
+        .clickable-station {
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 2px solid transparent;
+        }
+        
+        .clickable-station:hover {
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 12px 30px rgba(0, 184, 148, 0.5);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+        
+        .clickable-station:active {
+            transform: translateY(-2px) scale(1.02);
+        }
+    </style>
+    <script>
+        function searchByStation(stationName) {
+            // Search for routes from this station
+            const fromInput = document.getElementById('from_station');
+            if (fromInput) {
+                fromInput.value = stationName;
+                // Auto-submit the form
+                fromInput.closest('form').submit();
+            }
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>SRT Database Statistics</h1>
+        
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number">{{ stats.total_entries }}</div>
+                <div class="stat-label">Total Route Segments</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ stats.total_stations }}</div>
+                <div class="stat-label">Known Stations</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">
+                    {% if stats.last_updated %}
+                        {{ stats.last_updated.split('T')[0] }}
+                    {% else %}
+                        Never
+                    {% endif %}
+                </div>
+                <div class="stat-label">Last Updated</div>
+            </div>
+        </div>        {% if stats.total_stations > 0 %}
+            <h2>Search Travel Times</h2>
+            <div class="search-container">
+                <form method="GET" action="{{ url_for('srt_stats') }}">
+                    <div class="search-row">
+                        <div>
+                            <label class="label" for="from_station">From Station:</label>
+                            <input type="text" 
+                                   id="from_station" 
+                                   name="from_station" 
+                                   class="search-input" 
+                                   placeholder="Enter start station..." 
+                                   value="{{ from_search or '' }}">
+                        </div>
+                        <div>
+                            <label class="label" for="to_station">To Station:</label>
+                            <input type="text" 
+                                   id="to_station" 
+                                   name="to_station" 
+                                   class="search-input" 
+                                   placeholder="Enter destination station..." 
+                                   value="{{ to_search or '' }}">
+                        </div>
+                        <button type="submit" class="search-btn">🔍 Search</button>
+                        <a href="{{ url_for('srt_stats') }}" class="clear-btn">Clear</a>
+                    </div>
+                </form>
+            </div>
+
+            {% if from_search or to_search %}
+                <div class="filter-info">
+                    <strong>Filtering results:</strong>
+                    {% if from_search %}From stations containing "{{ from_search }}"{% endif %}
+                    {% if from_search and to_search %} and {% endif %}
+                    {% if to_search %}To stations containing "{{ to_search }}"{% endif %}
+                    <br>
+                    <small>Showing {{ all_routes|length }} of {{ stats.total_entries }} total entries</small>
+                </div>            {% endif %}
+
+            <h2>Top Stations <small style="font-size: 0.6em; color: #7f8c8d;">(most frequent in database)</small></h2>
+            <div class="stations-list">
+                {% for station in top_stations %}
+                    <div class="station-item clickable-station" onclick="searchByStation('{{ station }}')">
+                        {{ station }}
+                        <small style="display: block; font-size: 0.8em; opacity: 0.8;">Click to search</small>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <h2>All Known Stations</h2>
+            <div class="stations-list">
+                {% for station in all_stations %}
+                    <div class="station-item">{{ station }}</div>
+                {% endfor %}
+            </div>
+
+            {% if all_routes %}
+                <h2>
+                    {% if from_search or to_search %}
+                        Filtered Travel Times
+                    {% else %}
+                        All Travel Times
+                    {% endif %}
+                    <small style="font-size: 0.6em; color: #7f8c8d;">({{ all_routes|length }} entries)</small>
+                </h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>From Station</th>
+                            <th>To Station</th>
+                            <th>Duration</th>
+                            <th>Last Updated</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for route in all_routes %}
+                            <tr>
+                                <td class="route-cell">{{ route.from }}</td>
+                                <td class="route-cell">{{ route.to }}</td>
+                                <td><span class="duration-badge">{{ route.duration }} min</span></td>
+                                <td class="date-cell">{{ route.updated.split('T')[0] }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% elif from_search or to_search %}
+                <div class="no-data">
+                    <h2>No Matching Routes Found</h2>
+                    <p>No travel times match your search criteria. Try different station names or clear the search to see all entries.</p>
+                </div>
+            {% endif %}
+        {% else %}
+            <div class="no-data">
+                <h2>No SRT Data Available</h2>
+                <p>The Station Running Time database is empty. Travel times will be populated automatically as you input bus schedules with stop information.</p>
+            </div>
+        {% endif %}
+
+        <div class="navigation">
+            <a href="{{ url_for('index') }}" class="nav-link">← Back to Scheduler</a>
+        </div>
+    </div>
+</body>
+</html>

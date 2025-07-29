@@ -5,236 +5,413 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Bus Scheduler</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/modern-styles.css') }}" />
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
+        .section-content {
+            transition: all 0.3s ease-in-out;
         }
-        header {
-            background-color: #3f51b5;
-            color: white;
-            padding: 1rem;
-        }
-        .container {
-            padding: 1rem;
-            max-width: 900px;
-            margin: 0 auto;
-        }
-        h2 {
-            margin-top: 2rem;
-        }
-        .runs-section {
-            margin-bottom: 2rem;
-        }
-        .run-row {
-            border: 1px solid #ddd;
-            padding: 0.5rem;
-            margin-bottom: 0.5rem;
-            border-radius: 4px;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-            align-items: flex-start;
-        }
-        .run-row input[type="text"],
-        .run-row input[type="time"],
-        .run-row textarea {
-            padding: 0.3rem;
-            font-size: 0.9rem;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
-        .run-row textarea {
-            resize: vertical;
-            min-height: 2rem;
-        }
-        .run-row button.remove {
-            background-color: #e53935;
-            color: white;
-            border: none;
-            padding: 0.3rem 0.6rem;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        .run-row button.remove:hover {
-            background-color: #c62828;
-        }
-        .add-btn {
-            background-color: #4caf50;
-            color: white;
-            border: none;
-            padding: 0.5rem 1rem;
-            border-radius: 4px;
-            cursor: pointer;
-            margin-top: 0.5rem;
-        }
-        .add-btn:hover {
-            background-color: #388e3c;
-        }
-        .submit-btn {
-            background-color: #3f51b5;
-            color: white;
-            border: none;
-            padding: 0.7rem 1.5rem;
-            border-radius: 4px;
-            cursor: pointer;
-            margin-top: 1rem;
-            font-size: 1rem;
-        }
-        .submit-btn:hover {
-            background-color: #303f9f;
-        }
-        select {
-            padding: 0.4rem;
-            font-size: 1rem;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
-        label {
-            font-weight: bold;
-        }
-        .submit-options {
-            margin: 1rem 0;
-            padding: 0.75rem;
-            background-color: #f5f5f5;
-            border-radius: 4px;
-            border: 1px solid #ddd;
-        }
-        .submit-options label {
+        
+        .section-header h3 {
+            user-select: none;
             display: flex;
             align-items: center;
-            gap: 0.5rem;
-            font-size: 0.95rem;
+            justify-content: space-between;
         }
-        .submit-options input[type="checkbox"] {
+        
+        .section-header h3:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            padding: 5px;
+        }
+        
+        .runs-header {
+            background-color: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 10px 15px;
+            margin: 10px 0;
+            user-select: none;
+        }
+        
+        .runs-header:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        .runs-header h4 {
             margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            color: var(--text-color);
+        }
+        
+        #inbound-toggle-indicator,
+        #outbound-toggle-indicator {
+            font-size: 0.8em;
+            margin-left: 10px;
+            transition: transform 0.3s ease;
         }
     </style>
 </head>
 <body>
-    <header>
-        <h1>Bus Scheduling Tool</h1>
-        <p>Enter inbound and outbound runs to generate an efficient bus roster.</p>
+    <header class="hero-header">
+        <div class="container">
+            <h1>🚌 Bus Scheduler</h1>
+            <p>Create professional bus schedules with ease</p>
+        </div>
     </header>
+
     <div class="container">
-        <form method="post" action="{{ url_for('handle_schedule') }}">
-            <label for="regulation">Regulatory regime:</label>
-            <select id="regulation" name="regulation">
-                <option value="GB">GB domestic (10 hours max)</option>
-                <option value="EU">EU assimilated (9 hours max)</option>
-            </select>
+        <div class="glass-card">
+            <h2>Configure Your Route</h2>
+            <form method="POST" action="/schedule">
+                <div class="form-group">
+                    <label for="regulation" class="label">Regulatory Framework:</label>
+                    <select id="regulation" name="regulation">
+                        <option value="GB">GB Domestic (10 hours max)</option>
+                        <option value="EU">EU Assimilated (9 hours max)</option>
+                    </select>
+                </div>                <div class="runs-sections-container">
+                    <div class="runs-section">                        <div class="section-header">
+                            <h3>🔄 Inbound Runs</h3>
+                            <div class="section-controls">
+                                <button type="button" class="btn btn-primary" onclick="addRun('inbound')">➕ Add Run</button>
+                                <button type="button" class="btn btn-danger" onclick="clearSection('inbound')">🗑️ Clear All</button>
+                            </div>
+                        </div>
 
-            <h2>Inbound Runs</h2>
-            <textarea id="inbound-bulk" rows="4" style="width:100%;margin-bottom:0.5rem" placeholder="Paste CSV or Excel block for inbound runs"></textarea>
-            <button type="button" class="add-btn" onclick="bulkPaste('inbound')">Bulk paste inbound runs</button>
-            <div id="inbound-container" class="runs-section"></div>
-            <button type="button" class="add-btn" onclick="addRun('inbound')">Add inbound run</button>
-            <input type="hidden" id="inbound-count" name="inbound_count" value="0" />
+                        <div class="bulk-input-section">
+                            <label for="inbound-bulk" class="label">Bulk Import (CSV/TSV):</label>
+                            <textarea id="inbound-bulk" placeholder="Paste CSV data here (first row: headers, first column: stop names, other columns: times for each run)" rows="4"></textarea>
+                            <button type="button" class="btn btn-secondary" onclick="bulkPaste('inbound')">Import Data</button>
+                        </div>
 
-            <h2>Outbound Runs</h2>
-            <textarea id="outbound-bulk" rows="4" style="width:100%;margin-bottom:0.5rem" placeholder="Paste CSV or Excel block for outbound runs"></textarea>
-            <button type="button" class="add-btn" onclick="bulkPaste('outbound')">Bulk paste outbound runs</button>
-            <div id="outbound-container" class="runs-section"></div>
-            <button type="button" class="add-btn" onclick="addRun('outbound')">Add outbound run</button>
-            <input type="hidden" id="outbound-count" name="outbound_count" value="0" />
+                        <div class="runs-header" onclick="toggleRunsSection('inbound')" style="cursor: pointer;">
+                            <h4>📋 Runs List <span id="inbound-toggle-indicator">▼</span></h4>
+                        </div>
 
-            <div class="form-section">
-                <h3>Submission Options</h3>
-                <div class="submit-options">
-                    <label>
-                        <input type="checkbox" id="skip-config" name="skip_configuration" value="true">
-                        Skip configuration step (use default settings)
-                    </label>
+                        <div id="inbound-runs" class="runs-container section-content">
+                            <!-- Single collapsible section for all imported runs -->
+                            <div id="inbound-imported-section" class="imported-runs-section" style="display: none;">
+                                <div class="imported-runs-header" onclick="toggleImportedRuns('inbound')">
+                                    <div class="imported-runs-title">
+                                        <h4>📋 Imported Runs</h4>
+                                        <span id="inbound-runs-count" class="runs-count">0 runs</span>
+                                    </div>
+                                    <div class="toggle-indicator">📋 Click to show/hide</div>
+                                </div>
+                                <div id="inbound-runs-content" class="imported-runs-content" style="display: none;">
+                                    <!-- Individual runs will be added here -->
+                                </div>
+                            </div>
+                            <!-- Manually added runs will appear here -->
+                        </div>
+                        <input type="hidden" id="inbound-count" name="inbound_count" value="0" />
+                    </div>
+
+                    <div class="runs-section">                        <div class="section-header">
+                            <h3>🔄 Outbound Runs</h3>
+                            <div class="section-controls">
+                                <button type="button" class="btn btn-primary" onclick="addRun('outbound')">➕ Add Run</button>
+                                <button type="button" class="btn btn-danger" onclick="clearSection('outbound')">🗑️ Clear All</button>
+                            </div>
+                        </div>
+
+                        <div class="bulk-input-section">
+                            <label for="outbound-bulk" class="label">Bulk Import (CSV/TSV):</label>
+                            <textarea id="outbound-bulk" placeholder="Paste CSV data here (first row: headers, first column: stop names, other columns: times for each run)" rows="4"></textarea>
+                            <button type="button" class="btn btn-secondary" onclick="bulkPaste('outbound')">Import Data</button>
+                        </div>
+
+                        <div class="runs-header" onclick="toggleRunsSection('outbound')" style="cursor: pointer;">
+                            <h4>📋 Runs List <span id="outbound-toggle-indicator">▼</span></h4>
+                        </div>
+
+                        <div id="outbound-runs" class="runs-container section-content">
+                            <!-- Single collapsible section for all imported runs -->
+                            <div id="outbound-imported-section" class="imported-runs-section" style="display: none;">
+                                <div class="imported-runs-header" onclick="toggleImportedRuns('outbound')">
+                                    <div class="imported-runs-title">
+                                        <h4>📋 Imported Runs</h4>
+                                        <span id="outbound-runs-count" class="runs-count">0 runs</span>
+                                    </div>
+                                    <div class="toggle-indicator">📋 Click to show/hide</div>
+                                </div>
+                                <div id="outbound-runs-content" class="imported-runs-content" style="display: none;">
+                                    <!-- Individual runs will be added here -->
+                                </div>
+                            </div>
+                            <!-- Manually added runs will appear here -->
+                        </div>
+                        <input type="hidden" id="outbound-count" name="outbound_count" value="0" />
+                    </div>
+                </div>                <div class="form-group">
+                    <div class="checkbox-group">
+                        <label class="checkbox-label" style="display: flex; align-items: center; color: var(--text-color); font-weight: 500;">
+                            <input type="checkbox" name="skip_configuration" value="true" style="margin-right: 0.5rem;" />
+                            <span class="checkmark" style="margin-right: 0.5rem;"></span>
+                            Skip configuration step (use default settings)
+                        </label>
+                    </div>
                 </div>
-            </div>
 
-            <button type="submit" class="submit-btn">Generate Schedule</button>
-        </form>
-    </div>
-
-    <script>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-success btn-large">🚀 Generate Schedule</button>
+                    <a href="/srt-stats" class="btn btn-outline">📊 SRT Statistics</a>
+                </div>
+            </form>
+        </div>
+    </div>    <script>
         let inboundCount = 0;
-        let outboundCount = 0;
-
-        function addRun(section) {
-            const container = document.getElementById(section + '-container');
+        let outboundCount = 0;        function addRun(section) {
+            const container = document.getElementById(section + '-runs');
             const countInput = document.getElementById(section + '-count');
             const index = section === 'inbound' ? inboundCount++ : outboundCount++;
             countInput.value = section === 'inbound' ? inboundCount : outboundCount;
 
             const row = document.createElement('div');
-            row.className = 'run-row';
+            row.className = 'run-row glass-card';
             row.setAttribute('data-index', index);
             row.setAttribute('data-section', section);
             row.innerHTML = `
-                <div style="flex: 1 1 100px; min-width: 120px;">
-                    <label>Run name:</label><br />
+                <div class="run-field">
+                    <label class="label">Run Name:</label>
                     <input type="text" name="${section}_run_${index}_name" placeholder="Run identifier" required />
                 </div>
-                <div style="flex: 1 1 100px; min-width: 120px;">
-                    <label>Start time:</label><br />
+                <div class="run-field">
+                    <label class="label">Start Time:</label>
                     <input type="time" name="${section}_run_${index}_start" required />
                 </div>
-                <div style="flex: 1 1 100px; min-width: 120px;">
-                    <label>End time:</label><br />
+                <div class="run-field">
+                    <label class="label">End Time:</label>
                     <input type="time" name="${section}_run_${index}_end" required />
                 </div>
-                <div style="flex: 2 1 200px; min-width: 200px;">
-                    <label>Stops (one per line):</label><br />
+                <div class="run-field run-field-wide">
+                    <label class="label">Stops (one per line):</label>
                     <textarea name="${section}_run_${index}_stops" rows="3" placeholder="Stop A\nStop B\nStop C"></textarea>
                 </div>
-                <div style="align-self: center;">
-                    <button type="button" class="remove" onclick="removeRun(this)">Remove</button>
+                <div class="run-field run-field-wide">
+                    <label class="label">Stop Times (comma separated, optional):</label>
+                    <input type="text" name="${section}_run_${index}_stop_times" placeholder="08:00, 08:15, 08:30" />
+                </div>
+                <div class="run-actions">
+                    <button type="button" class="btn btn-danger btn-small" onclick="removeRun(this)">🗑️ Remove</button>
                 </div>
             `;
             container.appendChild(row);
+        }function removeRun(btn) {
+            const row = btn.closest('.run-row');
+            const section = row.getAttribute('data-section');
+            
+            // Get current count before removing
+            const container = document.getElementById(section + '-runs');
+            const currentRunCount = container.querySelectorAll('.run-row').length;
+            
+            // Remove the run
+            row.remove();
+            
+            // Update the count properly
+            const countInput = document.getElementById(section + '-count');
+            const newCount = currentRunCount - 1;
+            countInput.value = newCount;
+            
+            // Update global counters
+            if (section === 'inbound') {
+                inboundCount = newCount;
+            } else {
+                outboundCount = newCount;
+            }
+        }        function clearSection(section) {
+            const container = document.getElementById(section + '-runs');
+            const bulkTextarea = document.getElementById(section + '-bulk');
+            const countInput = document.getElementById(section + '-count');
+            const importedSection = document.getElementById(section + '-imported-section');
+            const importedContent = document.getElementById(section + '-runs-content');
+            const runsCountSpan = document.getElementById(section + '-runs-count');
+
+            if (!container) {
+                return;
+            }
+
+            // Get all run-row elements (manually added runs)
+            const manuallyAddedRuns = container.querySelectorAll('.run-row');
+            
+            // Force check for imported data - check if section exists and is not hidden
+            let hasImportedData = false;
+            if (importedSection) {
+                // Check if it's visible OR has any content at all
+                const sectionVisible = importedSection.style.display !== 'none';
+                const hasAnyContent = importedContent && importedContent.innerHTML.trim().length > 50; // More than just comments
+                hasImportedData = sectionVisible || hasAnyContent;
+            }
+
+            const totalManualRuns = manuallyAddedRuns.length;
+
+            // Debug info
+            console.log(`Section: ${section}`);
+            console.log(`Manual runs found: ${totalManualRuns}`);
+            console.log(`Imported section exists: ${!!importedSection}`);
+            console.log(`Imported content exists: ${!!importedContent}`);
+            console.log(`Has imported data: ${hasImportedData}`);
+            if (importedContent) {
+                console.log(`Imported content length: ${importedContent.innerHTML.length}`);
+                console.log(`Imported content preview: ${importedContent.innerHTML.substring(0, 100)}`);
+            }
+
+            if (totalManualRuns > 0 || hasImportedData) {
+                // Clear manually added runs
+                manuallyAddedRuns.forEach(run => run.remove());
+                
+                // FORCE clear imported data - be very aggressive
+                if (importedSection) {
+                    importedSection.style.display = 'none';
+                }
+                if (importedContent) {
+                    importedContent.innerHTML = '';
+                    importedContent.style.display = 'none';
+                }
+                if (runsCountSpan) {
+                    runsCountSpan.textContent = '0 runs';
+                }
+
+                // Reset all counters
+                if (section === 'inbound') {
+                    inboundCount = 0;
+                } else {
+                    outboundCount = 0;
+                }
+                if (countInput) countInput.value = 0;
+                if (bulkTextarea) bulkTextarea.value = '';
+            }
         }
 
-        function removeRun(btn) {
-            const row = btn.parentElement.parentElement;
-            const section = row.getAttribute('data-section');
-            const index = parseInt(row.getAttribute('data-index'), 10);
-            row.parentElement.removeChild(row);
-            // We don't renumber existing runs; the backend ignores missing indices.
+        function toggleRunsSection(direction) {
+            const content = document.getElementById(`${direction}-runs`);
+            const indicator = document.getElementById(`${direction}-toggle-indicator`);
+            
+            if (content.style.display === 'none') {
+                content.style.display = 'block';
+                indicator.textContent = '▼';
+            } else {
+                content.style.display = 'none';
+                indicator.textContent = '▶';
+            }
+        }
+
+        function toggleImportedRuns(section) {
+            const content = document.getElementById(section + '-runs-content');
+            const indicator = document.querySelector(`#${section}-imported-section .toggle-indicator`);
+            if (content.style.display === 'none') {
+                content.style.display = '';
+                indicator.textContent = '📋 Click to hide';
+            } else {
+                content.style.display = 'none';
+                indicator.textContent = '📋 Click to show/hide';
+            }
         }
 
         function bulkPaste(section) {
             const bulkId = section + '-bulk';
-            const containerId = section + '-container';
-            const countInputId = section + '-count';
             const bulkText = document.getElementById(bulkId).value.trim();
             if (!bulkText) return;
+            
             // Parse CSV (tab or comma separated)
             const lines = bulkText.split(/\r?\n/).filter(l => l.trim());
             if (lines.length < 2) return;
-            // Remove any empty lines
+            
             // First line: headers (first cell is 'ID' or similar, rest are run names)
             const headers = lines[0].split(/,|\t/).map(h => h.trim());
             const stopRows = lines.slice(1);
+            
             // Each column after the first is a run
             for (let col = 1; col < headers.length; col++) {
                 let stops = [];
+                let stopTimes = [];
                 let start = '';
                 let end = '';
+                
                 for (let row = 0; row < stopRows.length; row++) {
                     const cells = stopRows[row].split(/,|\t/);
                     const stopName = cells[0] ? cells[0].trim() : '';
                     const time = cells[col] ? cells[col].trim() : '';
                     if (stopName && time) {
                         stops.push(stopName);
+                        stopTimes.push(time);
                         if (!start) start = time;
                         end = time;
                     }
                 }
+                
                 if (!start || !end) continue;
+                
                 addRun(section);
                 const idx = section === 'inbound' ? inboundCount - 1 : outboundCount - 1;
                 document.querySelector(`[name='${section}_run_${idx}_name']`).value = headers[col];
                 document.querySelector(`[name='${section}_run_${idx}_start']`).value = start;
                 document.querySelector(`[name='${section}_run_${idx}_end']`).value = end;
                 document.querySelector(`[name='${section}_run_${idx}_stops']`).value = stops.join('\n');
+                
+                // Set stop times if the field exists
+                const stopTimesField = document.querySelector(`[name='${section}_run_${idx}_stop_times']`);
+                if (stopTimesField) {
+                    stopTimesField.value = stopTimes.join(', ');
+                }
             }
+            
+            // Clear the bulk input
+            document.getElementById(bulkId).value = '';
+        }        // Add initial runs for demonstration - REMOVED to prevent empty runs
+        // document.addEventListener('DOMContentLoaded', function() {
+        //     addRun('inbound');
+        //     addRun('outbound');
+        // });
+        
+        function toggleRunCard(header) {
+            const content = header.nextElementSibling;
+            const indicator = header.querySelector('.toggle-indicator');
+            
+            if (content.style.display === 'none') {
+                content.style.display = 'block';
+                indicator.textContent = '▲';
+            } else {
+                content.style.display = 'none';
+                indicator.textContent = '▼';
+            }
+        }
+        
+        function updateRunPreview(input) {
+            const runCard = input.closest('.run-row');
+            const preview = runCard.querySelector('.run-name-preview');
+            const section = runCard.getAttribute('data-section');
+            const index = runCard.getAttribute('data-index');
+            
+            const nameInput = runCard.querySelector(`[name='${section}_run_${index}_name']`);
+            const startInput = runCard.querySelector(`[name='${section}_run_${index}_start']`);
+            const endInput = runCard.querySelector(`[name='${section}_run_${index}_end']`);
+            
+            let previewText = nameInput.value || 'New Run';
+            if (startInput.value && endInput.value) {
+                previewText += ` (${startInput.value} - ${endInput.value})`;
+            }
+            
+            preview.textContent = previewText;
+        }
+
+        // Debug function - you can remove this after testing
+        function debugSection(section) {
+            const importedSection = document.getElementById(section + '-imported-section');
+            const importedContent = document.getElementById(section + '-runs-content');
+            const runsCountSpan = document.getElementById(section + '-runs-count');
+            
+            console.log('=== DEBUG INFO ===');
+            console.log('Section:', section);
+            console.log('importedSection exists:', !!importedSection);
+            console.log('importedSection display:', importedSection ? importedSection.style.display : 'N/A');
+            console.log('importedContent exists:', !!importedContent);
+            console.log('importedContent display:', importedContent ? importedContent.style.display : 'N/A');
+            console.log('importedContent innerHTML length:', importedContent ? importedContent.innerHTML.length : 'N/A');
+            console.log('runsCountSpan text:', runsCountSpan ? runsCountSpan.textContent : 'N/A');
+            console.log('==================');
         }
     </script>
 </body>

@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bus Schedule Results</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/modern-styles.css') }}" />
+</head>
+<body>
+    <header class="hero-header">
+        <div class="container">
+            <h1>📋 Schedule Results</h1>
+            <p>Your optimized bus schedule is ready</p>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="glass-card">
+            <div class="schedule-summary">
+                <div class="summary-stats">
+                    <div class="stat-item">
+                        <span class="stat-value">{{ buses|length }}</span>
+                        <span class="stat-label">Buses Required</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value">{{ (buses | map(attribute='runs') | map('length') | sum) }}</span>
+                        <span class="stat-label">Total Runs</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value">{{ regulation }}</span>
+                        <span class="stat-label">Regulation</span>
+                    </div>
+                </div>
+                
+                <div class="regulation-info">
+                    <strong>Regulatory Framework:</strong> 
+                    {{ 'EU assimilated rules (max 9 hrs/day)' if regulation == 'EU' else 'GB domestic rules (max 10 hrs/day)' }}
+                </div>
+            </div>
+
+            <!-- Bus Assignments Section -->
+            <div class="schedule-section">
+                <h2>🚌 Bus Assignments</h2>
+                
+                <div class="color-legend">
+                    <h4>Vehicle Legend:</h4>
+                    {% for bus in buses %}
+                        {% set color_palette = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FECA57', '#FF9FF3', '#54A0FF', '#5F27CD', '#00D2D3', '#FF9F43', '#EE5A24', '#0984E3', '#6C5CE7', '#A29BFE', '#FD79A8', '#E17055', '#00B894', '#FDCB6E', '#E84393', '#2D3436'] %}
+                        {% set dark_colors = ['#5F27CD', '#EE5A24', '#0984E3', '#6C5CE7', '#E84393', '#2D3436'] %}
+                        {% set color = color_palette[(bus.bus_id - 1) % color_palette|length] %}
+                        {% set text_color = '#fff' if color in dark_colors else '#222' %}
+                        <div class="legend-item" style="background-color: {{ color }}; color: {{ text_color }};">
+                            Bus {{ bus.bus_id }}
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <div class="bus-assignments">
+                    {% for bus in buses %}
+                        {% set color_palette = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FECA57', '#FF9FF3', '#54A0FF', '#5F27CD', '#00D2D3', '#FF9F43', '#EE5A24', '#0984E3', '#6C5CE7', '#A29BFE', '#FD79A8', '#E17055', '#00B894', '#FDCB6E', '#E84393', '#2D3436'] %}
+                        {% set dark_colors = ['#5F27CD', '#EE5A24', '#0984E3', '#6C5CE7', '#E84393', '#2D3436'] %}
+                        {% set color = color_palette[(bus.bus_id - 1) % color_palette|length] %}
+                        {% set text_color = '#fff' if color in dark_colors else '#222' %}
+                        
+                        <div class="bus-card glass-card">
+                            <div class="bus-header" style="background-color: {{ color }}; color: {{ text_color }};">
+                                <h3>🚌 Bus {{ bus.bus_id }}</h3>
+                                <div class="bus-stats">
+                                    <span>{{ bus.runs|length }} runs</span>
+                                </div>
+                            </div>
+                            
+                            <div class="bus-runs">
+                                {% for run in bus.runs %}
+                                    <div class="run-item">
+                                        <div class="run-header">
+                                            <strong>{{ run.run_id }}</strong>
+                                            <span class="run-time">{{ run.start.strftime('%H:%M') }}–{{ run.end.strftime('%H:%M') }}</span>
+                                        </div>
+                                        {% if run.stops %}
+                                            <div class="run-stops">
+                                                {% for stop in run.stops %}
+                                                    <span class="stop">{{ stop }}</span>
+                                                    {% if not loop.last %} → {% endif %}
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                            
+                            {% if bus_breaks[bus.bus_id] %}
+                                <div class="bus-breaks">
+                                    <h4>Break Periods:</h4>
+                                    {% for brk in bus_breaks[bus.bus_id] %}
+                                        <div class="break-item">
+                                            <span class="break-time">{{ brk[0].strftime('%H:%M') }}</span>
+                                            <span class="break-duration">{{ brk[1] }} min</span>
+                                            <span class="break-location">at {{ brk[2] }}</span>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Timetable Section -->
+            {% if timetable_data %}
+            <div class="schedule-section">
+                <h2>🕐 Detailed Timetable</h2>
+                <div class="timetable-container">
+                    <table class="timetable-table">
+                        <thead>
+                            <tr>
+                                <th>Stop</th>
+                                {% if timetable_data and timetable_data.values() | list %}
+                                    {% for run_data in timetable_data.values() | list | first %}
+                                        {% set color_palette = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FECA57', '#FF9FF3', '#54A0FF', '#5F27CD', '#00D2D3', '#FF9F43', '#EE5A24', '#0984E3', '#6C5CE7', '#A29BFE', '#FD79A8', '#E17055', '#00B894', '#FDCB6E', '#E84393', '#2D3436'] %}
+                                        {% set dark_colors = ['#5F27CD', '#EE5A24', '#0984E3', '#6C5CE7', '#E84393', '#2D3436'] %}
+                                        {% set color = color_palette[(loop.index0) % color_palette|length] %}
+                                        {% set text_color = '#fff' if color in dark_colors else '#222' %}
+                                        <th style="background-color: {{ color }}; color: {{ text_color }};">{{ run_data.run_id }}</th>
+                                    {% endfor %}
+                                {% endif %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for stop_name, runs in timetable_data.items() %}
+                                <tr>
+                                    <td class="stop-name">{{ stop_name }}</td>
+                                    {% for run_data in runs %}
+                                        {% set color_palette = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FECA57', '#FF9FF3', '#54A0FF', '#5F27CD', '#00D2D3', '#FF9F43', '#EE5A24', '#0984E3', '#6C5CE7', '#A29BFE', '#FD79A8', '#E17055', '#00B894', '#FDCB6E', '#E84393', '#2D3436'] %}
+                                        {% set dark_colors = ['#5F27CD', '#EE5A24', '#0984E3', '#6C5CE7', '#E84393', '#2D3436'] %}
+                                        {% set color = color_palette[(loop.index0) % color_palette|length] %}
+                                        {% set text_color = '#fff' if color in dark_colors else '#222' %}
+                                        
+                                        <td style="background-color: {{ color }}; color: {{ text_color }}; font-weight: bold;">
+                                            {% if run_data.time %}
+                                                {{ run_data.time }}
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        </td>
+                                    {% endfor %}
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="form-actions">
+                <a href="/" class="btn btn-primary">🏠 Back to Main</a>
+                <button onclick="window.print()" class="btn btn-secondary">🖨️ Print Schedule</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Add print styles
+        const printStyles = `
+            @media print {
+                .hero-header, .form-actions { display: none !important; }
+                .glass-card { 
+                    background: white !important; 
+                    box-shadow: none !important;
+                    border: 1px solid #ccc !important;
+                }
+                .bus-card { 
+                    page-break-inside: avoid; 
+                    margin-bottom: 1rem !important;
+                }
+                .timetable-table { 
+                    font-size: 0.85rem; 
+                }
+            }
+        `;
+        
+        const styleElement = document.createElement('style');
+        styleElement.textContent = printStyles;
+        document.head.appendChild(styleElement);
+    </script>
+</body>
+</html>

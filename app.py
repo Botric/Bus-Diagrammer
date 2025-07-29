@@ -33,6 +33,149 @@ from typing import List, Dict, Optional
 
 from flask import Flask, render_template, request, redirect, url_for
 
+# Full SRT Database implementation
+import json
+import os
+from datetime import datetime, timedelta
+from typing import Dict, Optional, List
+from dataclasses import dataclass
+
+@dataclass
+class SRTEntry:
+    from_station: str
+    to_station: str
+    duration_minutes: int
+    last_updated: str
+
+class SRTDatabase:
+    def __init__(self, database_file: str = "srt_database.json"):
+        self.database_file = database_file
+        self.data: Dict[str, SRTEntry] = {}
+        self.load_database()
+    
+    def _make_key(self, from_station: str, to_station: str) -> str:
+        from_norm = from_station.strip().lower()
+        to_norm = to_station.strip().lower()
+        return f"{from_norm}|{to_norm}"
+    
+    def load_database(self):
+        if os.path.exists(self.database_file):
+            try:
+                with open(self.database_file, 'r', encoding='utf-8') as f:
+                    raw_data = json.load(f)
+                self.data = {}
+                for key, entry_dict in raw_data.items():
+                    self.data[key] = SRTEntry(**entry_dict)
+            except Exception as e:
+                print(f"Warning: Could not load SRT database: {e}")
+                self.data = {}
+        else:
+            self.data = {}
+    
+    def save_database(self):
+        try:
+            raw_data = {}
+            for key, entry in self.data.items():
+                raw_data[key] = {
+                    'from_station': entry.from_station,
+                    'to_station': entry.to_station,
+                    'duration_minutes': entry.duration_minutes,
+                    'last_updated': entry.last_updated
+                }
+            with open(self.database_file, 'w', encoding='utf-8') as f:
+                json.dump(raw_data, f, indent=2, ensure_ascii=False)
+        except Exception as e:
+            print(f"Warning: Could not save SRT database: {e}")
+    
+    def get_travel_time(self, from_station: str, to_station: str) -> Optional[int]:
+        key = self._make_key(from_station, to_station)
+        entry = self.data.get(key)
+        return entry.duration_minutes if entry else None
+    
+    def update_travel_time(self, from_station: str, to_station: str, duration_minutes: int):
+        key = self._make_key(from_station, to_station)
+        current_time = datetime.now().isoformat()
+        
+        existing_entry = self.data.get(key)
+        if existing_entry is None or duration_minutes > existing_entry.duration_minutes:
+            self.data[key] = SRTEntry(
+                from_station=from_station,
+                to_station=to_station,
+                duration_minutes=duration_minutes,
+                last_updated=current_time
+            )
+            self.save_database()
+    
+    def update_from_runs(self, runs: List):
+        for run in runs:
+            if len(run.stops) < 2:
+                continue
+            
+            # Check if run has timing data for each stop
+            if hasattr(run, 'stop_times') and run.stop_times and len(run.stop_times) == len(run.stops):
+                self._update_from_timetable(run.stops, run.stop_times)
+            else:
+                self._update_from_duration_only(run)
+    
+    def _update_from_timetable(self, stops: List[str], stop_times: List[str]):
+        parsed_times = []
+        for time_str in stop_times:
+            try:
+                if len(time_str.split(':')) == 2:
+                    time_obj = datetime.strptime(time_str, '%H:%M')
+                else:
+                    time_obj = datetime.strptime(time_str, '%H:%M:%S')
+                parsed_times.append(time_obj)
+            except (ValueError, AttributeError):
+                return self._update_from_duration_only_with_stops(stops, len(stops) * 17)
+        
+        for i in range(len(stops) - 1):
+            from_station = stops[i]
+            to_station = stops[i + 1]
+            
+            time_diff = parsed_times[i + 1] - parsed_times[i]
+            if time_diff.total_seconds() < 0:
+                time_diff += timedelta(days=1)
+            
+            duration_minutes = int(time_diff.total_seconds() / 60)
+            if 1 <= duration_minutes <= 120:
+                self.update_travel_time(from_station, to_station, duration_minutes)
+    
+    def _update_from_duration_only(self, run):
+        total_duration_minutes = int((run.end - run.start).total_seconds() / 60)
+        num_segments = len(run.stops) - 1
+        if num_segments > 0:
+            time_per_segment = total_duration_minutes // num_segments
+            for i in range(len(run.stops) - 1):
+                from_station = run.stops[i]
+                to_station = run.stops[i + 1]
+                self.update_travel_time(from_station, to_station, time_per_segment)
+    
+    def _update_from_duration_only_with_stops(self, stops: List[str], total_duration_minutes: int):
+        num_segments = len(stops) - 1
+        if num_segments > 0:
+            time_per_segment = total_duration_minutes // num_segments
+            for i in range(len(stops) - 1):
+                from_station = stops[i]
+                to_station = stops[i + 1]
+                self.update_travel_time(from_station, to_station, time_per_segment)
+    
+    def get_all_stations(self) -> List[str]:
+        stations = set()
+        for entry in self.data.values():
+            stations.add(entry.from_station)
+            stations.add(entry.to_station)
+        return sorted(list(stations))
+    
+    def get_statistics(self) -> Dict:
+        return {
+            'total_entries': len(self.data),
+            'total_stations': len(self.get_all_stations()),
+            'last_updated': max([entry.last_updated for entry in self.data.values()]) if self.data else None
+        }
+
+srt_db = SRTDatabase()
+
 
 app = Flask(__name__)
 
@@ -58,6 +201,9 @@ class Run:
     section:
         Either ``inbound`` or ``outbound`` to denote which section the
         run came from.
+    stop_times:
+        Optional list of time strings for each stop (e.g., ['08:00', '08:15', '08:30']).
+        Used for accurate SRT calculation when available.
     """
 
     run_id: str
@@ -65,11 +211,29 @@ class Run:
     end: datetime
     stops: List[str]
     section: str
+    stop_times: Optional[List[str]] = None
 
     @property
     def duration_hours(self) -> float:
         """Return the duration of the run in hours."""
         return (self.end - self.start).total_seconds() / 3600.0
+    
+    def get_stop_time(self, stop_index: int) -> str:
+        """Get the time for a specific stop, either from stop_times or calculated."""
+        if self.stop_times and stop_index < len(self.stop_times):
+            return self.stop_times[stop_index]
+        
+        # Calculate estimated time based on position in route
+        if len(self.stops) <= 1:
+            return self.start.strftime('%H:%M')
+            
+        total_duration_minutes = (self.end - self.start).total_seconds() / 60
+        segments = len(self.stops) - 1
+        time_per_segment = total_duration_minutes / segments
+        estimated_minutes = stop_index * time_per_segment
+        
+        estimated_time = self.start + timedelta(minutes=estimated_minutes)
+        return estimated_time.strftime('%H:%M')
 
 
 @dataclass
@@ -151,7 +315,7 @@ def schedule_buses(runs: List[Run], regime: str, min_layover_time: int = 15,
                 best_bus = bus
                 break
                 
-            # Calculate when this bus will be available considering breaks and dead time
+            # Calculate when this bus will be available considering breaks, layover, and travel time
             driving_since_last_break = 0.0
             last_end = None
             
@@ -168,17 +332,25 @@ def schedule_buses(runs: List[Run], regime: str, min_layover_time: int = 15,
                 if last_end:
                     last_end += timedelta(minutes=dead_time_minutes + break_duration)
             else:
-                # Determine layover time based on terminal
+                # Determine layover time based on terminal and add travel time
                 if last_end and bus.runs:
                     last_run = bus.runs[-1]
+                    
+                    # Calculate travel time between runs
+                    travel_time = calculate_travel_time_between_runs(last_run, run)
+                    
                     # Use the end terminal of the last run for layover calculation
                     if last_run.stops:
                         end_terminal = last_run.stops[-1]
                         terminal_layover = get_layover_time_for_terminal(end_terminal, terminal_layovers, dead_time_minutes)
-                        last_end += timedelta(minutes=terminal_layover)
+                        # Total time = layover + travel time (travel time accounts for deadheading)
+                        total_time = max(terminal_layover, travel_time)
+                        last_end += timedelta(minutes=total_time)
                     else:
-                        last_end += timedelta(minutes=dead_time_minutes)
+                        # No stop info, use default layover + estimated travel time
+                        last_end += timedelta(minutes=dead_time_minutes + travel_time)
                 elif last_end:
+                    # No previous runs, just use default layover
                     last_end += timedelta(minutes=dead_time_minutes)
             
             # Check if bus is available and prefer alternating inbound/outbound
@@ -209,6 +381,37 @@ def get_layover_time_for_terminal(terminal: str, terminal_layovers: Dict[str, in
     return terminal_layovers.get(clean_terminal, default_layover)
 
 
+def calculate_travel_time_between_runs(last_run: Run, next_run: Run) -> int:
+    """
+    Calculate travel time between the end of one run and start of another.
+    Returns time in minutes, or 0 if runs connect directly.
+    """
+    if not last_run.stops or not next_run.stops:
+        return 0  # Can't calculate without stop information
+    
+    last_end_station = last_run.stops[-1]
+    next_start_station = next_run.stops[0]
+    
+    # If runs connect directly (end station = start station), no travel time needed
+    if last_end_station.lower().strip() == next_start_station.lower().strip():
+        return 0
+    
+    # Look up travel time in SRT database
+    travel_time = srt_db.get_travel_time(last_end_station, next_start_station)
+    
+    if travel_time is not None:
+        return travel_time
+    
+    # If no SRT data available, estimate based on a default speed
+    # This is a fallback - in practice you'd want actual routing data
+    return 15  # Default 15 minutes for unknown routes
+
+
+def update_srt_from_runs(runs: List[Run]):
+    """Update the SRT database with timing data from the input runs."""
+    srt_db.update_from_runs(runs)
+
+
 @app.route('/', methods=['GET'])
 def index() -> str:
     """Render the form for entering runs and selecting regulations."""
@@ -230,6 +433,7 @@ def handle_schedule() -> str:
         start_str = request.form.get(f'inbound_run_{i}_start')
         end_str = request.form.get(f'inbound_run_{i}_end')
         stops_str = request.form.get(f'inbound_run_{i}_stops') or ''
+        stop_times_str = request.form.get(f'inbound_run_{i}_stop_times') or ''
         if not name or not start_str or not end_str:
             continue
         try:
@@ -240,7 +444,16 @@ def handle_schedule() -> str:
         if end_dt <= start_dt:
             end_dt = end_dt + timedelta(days=1)
         stops = [s.strip() for s in stops_str.splitlines() if s.strip()]
-        runs.append(Run(run_id=name.strip(), start=start_dt, end=end_dt, stops=stops, section='inbound'))
+        
+        # Parse stop times if available
+        stop_times = None
+        if stop_times_str:
+            stop_times = [t.strip() for t in stop_times_str.split(',') if t.strip()]
+            # Only use stop times if we have the same number as stops
+            if len(stop_times) != len(stops):
+                stop_times = None
+        
+        runs.append(Run(run_id=name.strip(), start=start_dt, end=end_dt, stops=stops, section='inbound', stop_times=stop_times))
     
     # Parse outbound runs
     outbound_count = int(request.form.get('outbound_count') or 0)
@@ -249,6 +462,7 @@ def handle_schedule() -> str:
         start_str = request.form.get(f'outbound_run_{i}_start')
         end_str = request.form.get(f'outbound_run_{i}_end')
         stops_str = request.form.get(f'outbound_run_{i}_stops') or ''
+        stop_times_str = request.form.get(f'outbound_run_{i}_stop_times') or ''
         if not name or not start_str or not end_str:
             continue
         try:
@@ -259,14 +473,37 @@ def handle_schedule() -> str:
         if end_dt <= start_dt:
             end_dt = end_dt + timedelta(days=1)
         stops = [s.strip() for s in stops_str.splitlines() if s.strip()]
-        runs.append(Run(run_id=name.strip(), start=start_dt, end=end_dt, stops=stops, section='outbound'))
+        
+        # Parse stop times if available
+        stop_times = None
+        if stop_times_str:
+            stop_times = [t.strip() for t in stop_times_str.split(',') if t.strip()]
+            # Only use stop times if we have the same number as stops
+            if len(stop_times) != len(stops):
+                stop_times = None
+                
+        runs.append(Run(run_id=name.strip(), start=start_dt, end=end_dt, stops=stops, section='outbound', stop_times=stop_times))
+    
+    # Update SRT database with timing data from input runs
+    update_srt_from_runs(runs)
     
     if skip_configuration:
         # Generate schedule directly with default parameters
         return generate_schedule_with_defaults(runs, regulation)
     else:
+        # Extract all unique terminal stops from runs
+        terminals = set()
+        for run in runs:
+            if run.stops:
+                # First and last stops are terminals
+                terminals.add(run.stops[0])
+                terminals.add(run.stops[-1])
+        
+        # Sort terminals alphabetically for consistent ordering
+        terminal_list = sorted(list(terminals))
+        
         # Redirect to configuration page
-        return render_template('configure.html', runs=runs, regulation=regulation)
+        return render_template('configure.html', runs=runs, regulation=regulation, terminals=terminal_list)
 
 
 @app.route('/generate', methods=['POST'])
@@ -296,41 +533,40 @@ def generate_schedule() -> str:
     runs: List[Run] = []
     
     # Parse runs from hidden form fields
-    inbound_count = int(request.form.get('inbound_count') or 0)
-    for i in range(inbound_count):
-        name = request.form.get(f'inbound_run_{i}_name')
-        start_str = request.form.get(f'inbound_run_{i}_start')
-        end_str = request.form.get(f'inbound_run_{i}_end')
-        stops_str = request.form.get(f'inbound_run_{i}_stops') or ''
-        if not name or not start_str or not end_str:
+    run_count = int(request.form.get('run_count', 0))
+    for i in range(run_count):
+        run_id = request.form.get(f'run_{i}_id')
+        start_str = request.form.get(f'run_{i}_start')
+        end_str = request.form.get(f'run_{i}_end')
+        section = request.form.get(f'run_{i}_section')
+        stops_str = request.form.get(f'run_{i}_stops', '')
+        stop_times_str = request.form.get(f'run_{i}_stop_times', '')
+        
+        if not run_id or not start_str or not end_str or not section:
             continue
+            
         try:
             start_dt = datetime.strptime(start_str, '%H:%M')
             end_dt = datetime.strptime(end_str, '%H:%M')
         except ValueError:
             continue
+            
         if end_dt <= start_dt:
             end_dt = end_dt + timedelta(days=1)
-        stops = [s.strip() for s in stops_str.splitlines() if s.strip()]
-        runs.append(Run(run_id=name.strip(), start=start_dt, end=end_dt, stops=stops, section='inbound'))
+            
+        stops = [s.strip() for s in stops_str.split('|') if s.strip()]
+        
+        # Parse stop times if available
+        stop_times = None
+        if stop_times_str:
+            stop_times = [t.strip() for t in stop_times_str.split(',') if t.strip()]
+            if len(stop_times) != len(stops):
+                stop_times = None
+                
+        runs.append(Run(run_id=run_id.strip(), start=start_dt, end=end_dt, stops=stops, section=section, stop_times=stop_times))
     
-    outbound_count = int(request.form.get('outbound_count') or 0)
-    for i in range(outbound_count):
-        name = request.form.get(f'outbound_run_{i}_name')
-        start_str = request.form.get(f'outbound_run_{i}_start')
-        end_str = request.form.get(f'outbound_run_{i}_end')
-        stops_str = request.form.get(f'outbound_run_{i}_stops') or ''
-        if not name or not start_str or not end_str:
-            continue
-        try:
-            start_dt = datetime.strptime(start_str, '%H:%M')
-            end_dt = datetime.strptime(end_str, '%H:%M')
-        except ValueError:
-            continue
-        if end_dt <= start_dt:
-            end_dt = end_dt + timedelta(days=1)
-        stops = [s.strip() for s in stops_str.splitlines() if s.strip()]
-        runs.append(Run(run_id=name.strip(), start=start_dt, end=end_dt, stops=stops, section='outbound'))
+    # Update SRT database with timing data from input runs
+    update_srt_from_runs(runs)
     
     # Generate schedule with custom parameters
     buses = schedule_buses(runs, regulation, min_layover_time, min_break_extension, 
@@ -345,19 +581,37 @@ def generate_schedule() -> str:
     
     all_stops = []
     seen_stops = set()
+    
+    # Build timetable data organized by stops (rows) with runs (columns)
+    timetable_data = {}
+    
+    # First pass: collect all unique stops in order
     for run in runs:
         for stop in run.stops:
             if stop not in seen_stops:
                 seen_stops.add(stop)
                 all_stops.append(stop)
     
+    # Second pass: build timetable data with stop as key, runs as values
+    for stop in all_stops:
+        timetable_data[stop] = []
+        for run in runs:
+            if stop in run.stops:
+                stop_index = run.stops.index(stop)
+                time = run.get_stop_time(stop_index)
+            else:
+                time = None
+            timetable_data[stop].append({
+                'run_id': run.run_id,
+                'time': time,
+                'section': run.section
+            })
+
     # Keep runs in the original input order instead of sorting by run_id
-    return render_template('schedule.html', runs=runs, buses=buses, all_stops=all_stops, 
+    return render_template('schedule_modern.html', runs=runs, buses=buses, all_stops=all_stops, 
                           regulation=regulation, bus_breaks=bus_breaks, run_to_bus=run_to_bus,
                           min_layover_time=min_layover_time, min_break_extension=min_break_extension,
-                          terminal_layovers=terminal_layovers)
-
-
+                          terminal_layovers=terminal_layovers, timetable_data=timetable_data)
 def generate_schedule_with_defaults(runs: List[Run], regulation: str) -> str:
     """Generate schedule with default parameters when skipping configuration."""
     # Use default parameters
@@ -380,16 +634,81 @@ def generate_schedule_with_defaults(runs: List[Run], regulation: str) -> str:
     
     all_stops = []
     seen_stops = set()
+    # Build timetable data with actual stop times - structure for schedule_modern.html
+    timetable_data = {}
     for run in runs:
-        for stop in run.stops:
+        for i, stop in enumerate(run.stops):
             if stop not in seen_stops:
                 seen_stops.add(stop)
                 all_stops.append(stop)
+                timetable_data[stop] = []
+            
+            # Get bus assignment
+            bus_id = run_to_bus.get(run.run_id, 'Unknown')
+            
+            # Store the calculated time for this stop
+            timetable_data[stop].append({
+                'run_id': run.run_id,
+                'time': run.get_stop_time(i),
+                'section': run.section,
+                'bus_id': bus_id
+            })
     
     # Keep runs in the original input order instead of sorting by run_id
-    return render_template('schedule.html', runs=runs, buses=buses, all_stops=all_stops, 
+    return render_template('schedule_modern.html', runs=runs, buses=buses, all_stops=all_stops, 
                           regulation=regulation, bus_breaks=bus_breaks, run_to_bus=run_to_bus,
-                          min_layover_time=min_layover_time, min_break_extension=min_break_extension)
+                          min_layover_time=min_layover_time, min_break_extension=min_break_extension,
+                          timetable_data=timetable_data)
+
+
+@app.route('/srt-stats')
+def srt_stats():
+    """Display SRT database statistics with search functionality."""
+    stats = srt_db.get_statistics()
+    all_stations = srt_db.get_all_stations()
+    
+    # Get search parameters
+    from_search = request.args.get('from_station', '').strip()
+    to_search = request.args.get('to_station', '').strip()
+    
+    # Calculate station frequency (count of entries for each station)
+    station_frequency = {}
+    for entry in srt_db.data.values():
+        from_station = entry.from_station
+        to_station = entry.to_station
+        station_frequency[from_station] = station_frequency.get(from_station, 0) + 1
+        station_frequency[to_station] = station_frequency.get(to_station, 0) + 1
+    
+    # Get top 6 stations by frequency
+    top_stations = sorted(station_frequency.items(), key=lambda x: x[1], reverse=True)[:6]
+    top_stations_list = [station[0] for station in top_stations]
+    
+    # Get all travel times with optional filtering
+    all_routes = []
+    for entry in srt_db.data.values():
+        # Apply search filters if provided
+        if from_search and from_search.lower() not in entry.from_station.lower():
+            continue
+        if to_search and to_search.lower() not in entry.to_station.lower():
+            continue
+            
+        all_routes.append({
+            'from': entry.from_station,
+            'to': entry.to_station,
+            'duration': entry.duration_minutes,
+            'updated': entry.last_updated
+        })
+    
+    # Sort by from station, then by to station
+    all_routes.sort(key=lambda x: (x['from'].lower(), x['to'].lower()))
+    
+    return render_template('srt_stats.html', 
+                         stats=stats, 
+                         all_stations=all_stations,
+                         all_routes=all_routes,
+                         from_search=from_search,
+                         to_search=to_search,
+                         top_stations=top_stations_list)
 
 
 if __name__ == '__main__':

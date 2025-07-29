@@ -1,0 +1,230 @@
+{
+  "northallerton|yarm": {
+    "from_station": "Northallerton",
+    "to_station": "Yarm",
+    "duration_minutes": 27,
+    "last_updated": "2025-07-29T21:33:12.501911"
+  },
+  "yarm|thornaby": {
+    "from_station": "Yarm",
+    "to_station": "Thornaby",
+    "duration_minutes": 17,
+    "last_updated": "2025-07-29T21:33:12.505911"
+  },
+  "thornaby|middlesbrough": {
+    "from_station": "Thornaby",
+    "to_station": "Middlesbrough",
+    "duration_minutes": 10,
+    "last_updated": "2025-07-29T21:33:12.508912"
+  },
+  "middlesbrough|redcarcentral": {
+    "from_station": "Middlesbrough",
+    "to_station": "RedcarCentral",
+    "duration_minutes": 20,
+    "last_updated": "2025-07-29T21:33:12.512210"
+  },
+  "redcarcentral|saltburn": {
+    "from_station": "RedcarCentral",
+    "to_station": "Saltburn",
+    "duration_minutes": 15,
+    "last_updated": "2025-07-29T21:33:12.515210"
+  },
+  "saltburn|redcarcentral": {
+    "from_station": "Saltburn",
+    "to_station": "RedcarCentral",
+    "duration_minutes": 15,
+    "last_updated": "2025-07-29T21:33:12.520210"
+  },
+  "redcarcentral|middlesbrough": {
+    "from_station": "RedcarCentral",
+    "to_station": "Middlesbrough",
+    "duration_minutes": 20,
+    "last_updated": "2025-07-29T21:33:12.523273"
+  },
+  "middlesbrough|thornaby": {
+    "from_station": "Middlesbrough",
+    "to_station": "Thornaby",
+    "duration_minutes": 10,
+    "last_updated": "2025-07-29T21:33:12.527274"
+  },
+  "thornaby|yarm": {
+    "from_station": "Thornaby",
+    "to_station": "Yarm",
+    "duration_minutes": 17,
+    "last_updated": "2025-07-29T21:33:12.530273"
+  },
+  "yarm|northallerton": {
+    "from_station": "Yarm",
+    "to_station": "Northallerton",
+    "duration_minutes": 27,
+    "last_updated": "2025-07-29T21:33:12.534298"
+  },
+  "southamptoncentral|christchurch": {
+    "from_station": "SouthamptonCentral",
+    "to_station": "Christchurch",
+    "duration_minutes": 45,
+    "last_updated": "2025-07-29T22:14:37.151838"
+  },
+  "christchurch|bournemouth": {
+    "from_station": "Christchurch",
+    "to_station": "Bournemouth",
+    "duration_minutes": 15,
+    "last_updated": "2025-07-29T22:14:37.156878"
+  },
+  "bournemouth|poole": {
+    "from_station": "Bournemouth",
+    "to_station": "Poole",
+    "duration_minutes": 22,
+    "last_updated": "2025-07-29T22:14:37.161878"
+  },
+  "southamptoncentral|bournemouth": {
+    "from_station": "SouthamptonCentral",
+    "to_station": "Bournemouth",
+    "duration_minutes": 49,
+    "last_updated": "2025-07-29T22:14:37.167953"
+  },
+  "bournemouth|branksome": {
+    "from_station": "Bournemouth",
+    "to_station": "Branksome",
+    "duration_minutes": 9,
+    "last_updated": "2025-07-29T22:14:37.171954"
+  },
+  "branksome|parkstonedorset": {
+    "from_station": "Branksome",
+    "to_station": "ParkstoneDorset",
+    "duration_minutes": 6,
+    "last_updated": "2025-07-29T22:14:37.190515"
+  },
+  "parkstonedorset|poole": {
+    "from_station": "ParkstoneDorset",
+    "to_station": "Poole",
+    "duration_minutes": 12,
+    "last_updated": "2025-07-29T22:14:37.212030"
+  },
+  "poole|parkstonedorset": {
+    "from_station": "Poole",
+    "to_station": "ParkstoneDorset",
+    "duration_minutes": 7,
+    "last_updated": "2025-07-29T22:14:37.239555"
+  },
+  "parkstonedorset|branksome": {
+    "from_station": "ParkstoneDorset",
+    "to_station": "Branksome",
+    "duration_minutes": 6,
+    "last_updated": "2025-07-29T22:14:37.257087"
+  },
+  "branksome|bournemouth": {
+    "from_station": "Branksome",
+    "to_station": "Bournemouth",
+    "duration_minutes": 9,
+    "last_updated": "2025-07-29T22:14:37.271605"
+  },
+  "bournemouth|christchurch": {
+    "from_station": "Bournemouth",
+    "to_station": "Christchurch",
+    "duration_minutes": 15,
+    "last_updated": "2025-07-29T22:14:37.277165"
+  },
+  "christchurch|southamptoncentral": {
+    "from_station": "Christchurch",
+    "to_station": "SouthamptonCentral",
+    "duration_minutes": 45,
+    "last_updated": "2025-07-29T22:14:37.282674"
+  },
+  "poole|bournemouth": {
+    "from_station": "Poole",
+    "to_station": "Bournemouth",
+    "duration_minutes": 22,
+    "last_updated": "2025-07-29T22:14:37.304937"
+  },
+  "bournemouth|southamptoncentral": {
+    "from_station": "Bournemouth",
+    "to_station": "SouthamptonCentral",
+    "duration_minutes": 45,
+    "last_updated": "2025-07-29T22:14:37.310938"
+  },
+  "haslemere|witley": {
+    "from_station": "Haslemere",
+    "to_station": "Witley",
+    "duration_minutes": 15,
+    "last_updated": "2025-07-29T23:26:23.475147"
+  },
+  "witley|milfordsurrey": {
+    "from_station": "Witley",
+    "to_station": "MilfordSurrey",
+    "duration_minutes": 10,
+    "last_updated": "2025-07-29T23:26:23.479146"
+  },
+  "milfordsurrey|godalming": {
+    "from_station": "MilfordSurrey",
+    "to_station": "Godalming",
+    "duration_minutes": 8,
+    "last_updated": "2025-07-29T23:26:23.483308"
+  },
+  "godalming|farncombe": {
+    "from_station": "Godalming",
+    "to_station": "Farncombe",
+    "duration_minutes": 8,
+    "last_updated": "2025-07-29T23:26:23.487611"
+  },
+  "farncombe|guildford": {
+    "from_station": "Farncombe",
+    "to_station": "Guildford",
+    "duration_minutes": 22,
+    "last_updated": "2025-07-29T23:26:23.490611"
+  },
+  "haslemere|guildford": {
+    "from_station": "Haslemere",
+    "to_station": "Guildford",
+    "duration_minutes": 40,
+    "last_updated": "2025-07-29T23:26:23.495118"
+  },
+  "haslemere|godalming": {
+    "from_station": "Haslemere",
+    "to_station": "Godalming",
+    "duration_minutes": 21,
+    "last_updated": "2025-07-29T23:26:23.498118"
+  },
+  "guildford|haslemere": {
+    "from_station": "Guildford",
+    "to_station": "Haslemere",
+    "duration_minutes": 40,
+    "last_updated": "2025-07-29T23:26:23.502118"
+  },
+  "guildford|farncombe": {
+    "from_station": "Guildford",
+    "to_station": "Farncombe",
+    "duration_minutes": 17,
+    "last_updated": "2025-07-29T23:26:23.505700"
+  },
+  "farncombe|godalming": {
+    "from_station": "Farncombe",
+    "to_station": "Godalming",
+    "duration_minutes": 8,
+    "last_updated": "2025-07-29T23:26:23.508844"
+  },
+  "godalming|milfordsurrey": {
+    "from_station": "Godalming",
+    "to_station": "MilfordSurrey",
+    "duration_minutes": 8,
+    "last_updated": "2025-07-29T23:26:23.511844"
+  },
+  "milfordsurrey|witley": {
+    "from_station": "MilfordSurrey",
+    "to_station": "Witley",
+    "duration_minutes": 10,
+    "last_updated": "2025-07-29T23:26:23.515351"
+  },
+  "witley|haslemere": {
+    "from_station": "Witley",
+    "to_station": "Haslemere",
+    "duration_minutes": 20,
+    "last_updated": "2025-07-29T23:26:23.518351"
+  },
+  "godalming|haslemere": {
+    "from_station": "Godalming",
+    "to_station": "Haslemere",
+    "duration_minutes": 26,
+    "last_updated": "2025-07-29T23:26:23.521351"
+  }
+}
