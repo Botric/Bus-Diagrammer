@@ -583,16 +583,88 @@ def generate_schedule() -> str:
     seen_stops = set()
     
     # Build timetable data organized by stops (rows) with runs (columns)
-    timetable_data = {}
+    # Create separate stop lists for inbound and outbound to handle different directions
+    inbound_stops = []
+    outbound_stops = []
     
-    # First pass: collect all unique stops in order
+    # Collect stops for inbound runs (normal order)
     for run in runs:
-        for stop in run.stops:
-            if stop not in seen_stops:
-                seen_stops.add(stop)
-                all_stops.append(stop)
+        if run.section == 'inbound':
+            for stop in run.stops:
+                if stop not in inbound_stops:
+                    inbound_stops.append(stop)
     
-    # Second pass: build timetable data with stop as key, runs as values
+    # Collect stops for outbound runs - reverse the typical inbound route
+    # First collect all outbound stops, then arrange them to mirror inbound in reverse
+    outbound_stop_set = set()
+    for run in runs:
+        if run.section == 'outbound':
+            for stop in run.stops:
+                outbound_stop_set.add(stop)
+    
+    # Arrange outbound stops: if they match inbound stops, reverse the order
+    # Otherwise, use the order they appear in the runs
+    if inbound_stops and outbound_stop_set:
+        # Try to match outbound stops to reversed inbound order
+        outbound_stops = []
+        reversed_inbound = inbound_stops[::-1]
+        for stop in reversed_inbound:
+            if stop in outbound_stop_set:
+                outbound_stops.append(stop)
+        
+        # Add any remaining outbound stops that weren't in inbound
+        for run in runs:
+            if run.section == 'outbound':
+                for stop in run.stops:
+                    if stop not in outbound_stops:
+                        outbound_stops.append(stop)
+    else:
+        # No inbound stops to reverse, just use outbound order as-is
+        for run in runs:
+            if run.section == 'outbound':
+                for stop in run.stops:
+                    if stop not in outbound_stops:
+                        outbound_stops.append(stop)
+    
+    # Combine all unique stops for the overall list (inbound order first, then any outbound-only stops)
+    all_stops = inbound_stops.copy()
+    for stop in outbound_stops:
+        if stop not in all_stops:
+            all_stops.append(stop)
+    
+    # Build timetable data with section-specific stop ordering
+    # Create separate timetable data for inbound and outbound
+    inbound_timetable_data = {}
+    outbound_timetable_data = {}
+    
+    # Build inbound timetable data
+    for run in runs:
+        if run.section == 'inbound':
+            for i, stop in enumerate(run.stops):
+                if stop not in inbound_timetable_data:
+                    inbound_timetable_data[stop] = []
+                
+                inbound_timetable_data[stop].append({
+                    'run_id': run.run_id,
+                    'time': run.get_stop_time(i),
+                    'section': run.section
+                })
+    
+    # Build outbound timetable data 
+    for run in runs:
+        if run.section == 'outbound':
+            for i, stop in enumerate(run.stops):
+                if stop not in outbound_timetable_data:
+                    outbound_timetable_data[stop] = []
+                
+                outbound_timetable_data[stop].append({
+                    'run_id': run.run_id,
+                    'time': run.get_stop_time(i),
+                    'section': run.section
+                })
+    
+    # Build combined timetable data for compatibility
+    timetable_data = {}
     for stop in all_stops:
         timetable_data[stop] = []
         for run in runs:
@@ -611,7 +683,9 @@ def generate_schedule() -> str:
     return render_template('schedule_modern.html', runs=runs, buses=buses, all_stops=all_stops, 
                           regulation=regulation, bus_breaks=bus_breaks, run_to_bus=run_to_bus,
                           min_layover_time=min_layover_time, min_break_extension=min_break_extension,
-                          terminal_layovers=terminal_layovers, timetable_data=timetable_data)
+                          terminal_layovers=terminal_layovers, timetable_data=timetable_data,
+                          inbound_timetable_data=inbound_timetable_data, outbound_timetable_data=outbound_timetable_data,
+                          inbound_stops=inbound_stops, outbound_stops=outbound_stops)
 def generate_schedule_with_defaults(runs: List[Run], regulation: str) -> str:
     """Generate schedule with default parameters when skipping configuration."""
     # Use default parameters
@@ -634,13 +708,99 @@ def generate_schedule_with_defaults(runs: List[Run], regulation: str) -> str:
     
     all_stops = []
     seen_stops = set()
+    
     # Build timetable data with actual stop times - structure for schedule_modern.html
+    # Create separate stop lists for inbound and outbound to handle different directions
+    inbound_stops = []
+    outbound_stops = []
+    
+    # Collect stops for inbound runs (normal order)
+    for run in runs:
+        if run.section == 'inbound':
+            for stop in run.stops:
+                if stop not in inbound_stops:
+                    inbound_stops.append(stop)
+    
+    # Collect stops for outbound runs - reverse the typical inbound route
+    outbound_stop_set = set()
+    for run in runs:
+        if run.section == 'outbound':
+            for stop in run.stops:
+                outbound_stop_set.add(stop)
+    
+    # Arrange outbound stops: if they match inbound stops, reverse the order
+    if inbound_stops and outbound_stop_set:
+        # Try to match outbound stops to reversed inbound order
+        outbound_stops = []
+        reversed_inbound = inbound_stops[::-1]
+        for stop in reversed_inbound:
+            if stop in outbound_stop_set:
+                outbound_stops.append(stop)
+        
+        # Add any remaining outbound stops that weren't in inbound
+        for run in runs:
+            if run.section == 'outbound':
+                for stop in run.stops:
+                    if stop not in outbound_stops:
+                        outbound_stops.append(stop)
+    else:
+        # No inbound stops to reverse, just use outbound order as-is
+        for run in runs:
+            if run.section == 'outbound':
+                for stop in run.stops:
+                    if stop not in outbound_stops:
+                        outbound_stops.append(stop)
+    
+    # Combine all unique stops for the overall list
+    all_stops = inbound_stops.copy()
+    for stop in outbound_stops:
+        if stop not in all_stops:
+            all_stops.append(stop)
+    
+    # Build timetable data with section-specific stop ordering
+    # Create separate timetable data for inbound and outbound
+    inbound_timetable_data = {}
+    outbound_timetable_data = {}
+    
+    # Build inbound timetable data in proper order
+    for run in runs:
+        if run.section == 'inbound':
+            for i, stop in enumerate(run.stops):
+                if stop not in inbound_timetable_data:
+                    inbound_timetable_data[stop] = []
+                
+                # Get bus assignment
+                bus_id = run_to_bus.get(run.run_id, 'Unknown')
+                
+                inbound_timetable_data[stop].append({
+                    'run_id': run.run_id,
+                    'time': run.get_stop_time(i),
+                    'section': run.section,
+                    'bus_id': bus_id
+                })
+    
+    # Build outbound timetable data in proper order
+    for run in runs:
+        if run.section == 'outbound':
+            for i, stop in enumerate(run.stops):
+                if stop not in outbound_timetable_data:
+                    outbound_timetable_data[stop] = []
+                
+                # Get bus assignment
+                bus_id = run_to_bus.get(run.run_id, 'Unknown')
+                
+                outbound_timetable_data[stop].append({
+                    'run_id': run.run_id,
+                    'time': run.get_stop_time(i),
+                    'section': run.section,
+                    'bus_id': bus_id
+                })
+    
+    # Build combined timetable data for compatibility
     timetable_data = {}
     for run in runs:
         for i, stop in enumerate(run.stops):
-            if stop not in seen_stops:
-                seen_stops.add(stop)
-                all_stops.append(stop)
+            if stop not in timetable_data:
                 timetable_data[stop] = []
             
             # Get bus assignment
@@ -658,7 +818,9 @@ def generate_schedule_with_defaults(runs: List[Run], regulation: str) -> str:
     return render_template('schedule_modern.html', runs=runs, buses=buses, all_stops=all_stops, 
                           regulation=regulation, bus_breaks=bus_breaks, run_to_bus=run_to_bus,
                           min_layover_time=min_layover_time, min_break_extension=min_break_extension,
-                          timetable_data=timetable_data)
+                          timetable_data=timetable_data, inbound_timetable_data=inbound_timetable_data, 
+                          outbound_timetable_data=outbound_timetable_data, inbound_stops=inbound_stops, 
+                          outbound_stops=outbound_stops)
 
 
 @app.route('/srt-stats')

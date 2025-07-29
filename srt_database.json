@@ -226,5 +226,29 @@
     "to_station": "Haslemere",
     "duration_minutes": 26,
     "last_updated": "2025-07-29T23:26:23.521351"
+  },
+  "brockenhurst|lymingtontown": {
+    "from_station": "Brockenhurst",
+    "to_station": "LymingtonTown",
+    "duration_minutes": 10,
+    "last_updated": "2025-07-29T23:40:47.661553"
+  },
+  "lymingtontown|lymingtonpier": {
+    "from_station": "LymingtonTown",
+    "to_station": "LymingtonPier",
+    "duration_minutes": 6,
+    "last_updated": "2025-07-29T23:40:47.665139"
+  },
+  "lymingtonpier|lymingtontown": {
+    "from_station": "LymingtonPier",
+    "to_station": "LymingtonTown",
+    "duration_minutes": 6,
+    "last_updated": "2025-07-29T23:40:47.669139"
+  },
+  "lymingtontown|brockenhurst": {
+    "from_station": "LymingtonTown",
+    "to_station": "Brockenhurst",
+    "duration_minutes": 10,
+    "last_updated": "2025-07-29T23:40:47.673464"
   }
 }
