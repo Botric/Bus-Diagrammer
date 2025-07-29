@@ -114,7 +114,7 @@
                         {% set color = '#ffffff' %}
                     {% endif %}
                     <td style="background-color: {{ color }}; color: #222; font-weight: bold;">
-                        {% if stop in run.stops %}{{ run.stops.index(stop) + 1 }}{% endif %}
+                        {% if stop in run.stops %}{{ run.start.strftime('%H:%M') }}{% endif %}
                     </td>
                 {% endfor %}
             </tr>
@@ -151,7 +151,7 @@
                         {% set color = '#ffffff' %}
                     {% endif %}
                     <td style="background-color: {{ color }}; color: #222; font-weight: bold;">
-                        {% if stop in run.stops %}{{ run.stops.index(stop) + 1 }}{% endif %}
+                        {% if stop in run.stops %}{{ run.start.strftime('%H:%M') }}{% endif %}
                     </td>
                 {% endfor %}
             </tr>

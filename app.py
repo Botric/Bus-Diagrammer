@@ -94,7 +94,6 @@ def get_breaks_for_bus(bus_runs, regime):
     continuous_limit = 4.5 if regime == 'EU' else 5.5  # hours
     break_length = 45 if regime == 'EU' else 30  # minutes
     driving_since_last_break = 0.0
-    last_break_time = None
     last_run_end = None
     for run in bus_runs:
         driving_since_last_break += run.duration_hours
@@ -104,18 +103,16 @@ def get_breaks_for_bus(bus_runs, regime):
             break_time = last_run_end
             breaks.append((break_time, break_length))
             driving_since_last_break = 0.0
-            last_break_time = break_time
             # Advance last_run_end by break_length to ensure next run starts after break
             last_run_end += timedelta(minutes=break_length)
     return breaks
 
 
-def schedule_buses(runs: List[Run], _max_daily_hours: float) -> List[BusAssignment]:
-    """Assign runs to buses, alternating inbound/outbound, allowing multiple runs per bus. Ensures breaks are respected and no run overlaps with a break."""
+def schedule_buses(runs: List[Run], regime: str) -> List[BusAssignment]:
+    """Assign runs to buses, respecting breaks and regime rules."""
     all_runs = sorted(runs, key=lambda r: r.start)
     buses: List[BusAssignment] = []
     assigned = set()
-    regime = 'EU' if any(r for r in runs if r.section == 'EU') else 'GB'
     continuous_limit = 4.5 if regime == 'EU' else 5.5
     break_length = 45 if regime == 'EU' else 30
 
@@ -124,7 +121,6 @@ def schedule_buses(runs: List[Run], _max_daily_hours: float) -> List[BusAssignme
             continue
         best_bus = None
         for bus in buses:
-            # Calculate next available time for this bus, considering breaks
             driving_since_last_break = 0.0
             last_end = None
             for r in bus.runs:
@@ -158,11 +154,7 @@ def index() -> str:
 def handle_schedule() -> str:
     """Handle form submission and compute the bus schedule."""
     regulation = request.form.get('regulation', 'GB')
-    # Determine maximum daily driving hours based on regulation
-    max_hours = 9.0 if regulation == 'EU' else 10.0
-
     runs: List[Run] = []
-    # Parse inbound runs
     inbound_count = int(request.form.get('inbound_count') or 0)
     for i in range(inbound_count):
         name = request.form.get(f'inbound_run_{i}_name')
@@ -170,19 +162,16 @@ def handle_schedule() -> str:
         end_str = request.form.get(f'inbound_run_{i}_end')
         stops_str = request.form.get(f'inbound_run_{i}_stops') or ''
         if not name or not start_str or not end_str:
-            continue  # skip incomplete runs
+            continue
         try:
             start_dt = datetime.strptime(start_str, '%H:%M')
             end_dt = datetime.strptime(end_str, '%H:%M')
         except ValueError:
-            continue  # skip if time format is wrong
-        # If end time is before start time, assume it finishes next day
+            continue
         if end_dt <= start_dt:
             end_dt = end_dt + timedelta(days=1)
         stops = [s.strip() for s in stops_str.splitlines() if s.strip()]
         runs.append(Run(run_id=name.strip(), start=start_dt, end=end_dt, stops=stops, section='inbound'))
-
-    # Parse outbound runs
     outbound_count = int(request.form.get('outbound_count') or 0)
     for i in range(outbound_count):
         name = request.form.get(f'outbound_run_{i}_name')
@@ -200,26 +189,18 @@ def handle_schedule() -> str:
             end_dt = end_dt + timedelta(days=1)
         stops = [s.strip() for s in stops_str.splitlines() if s.strip()]
         runs.append(Run(run_id=name.strip(), start=start_dt, end=end_dt, stops=stops, section='outbound'))
-
-    # Compute schedule
-    buses = schedule_buses(runs, max_hours)
-    # Compute breaks for each bus
+    buses = schedule_buses(runs, regulation)
     bus_breaks = {}
     for bus in buses:
         bus_breaks[bus.bus_id] = get_breaks_for_bus(bus.runs, regulation)
-
-    # Build list of all stops across runs for table display
-    all_stops = []  # maintain order of appearance
+    all_stops = []
     seen_stops = set()
     for run in runs:
         for stop in run.stops:
             if stop not in seen_stops:
                 seen_stops.add(stop)
                 all_stops.append(stop)
-
-    # Sort runs for display by run_id for consistent ordering
     runs_sorted = sorted(runs, key=lambda r: r.run_id)
-
     return render_template('schedule.html', runs=runs_sorted, buses=buses, all_stops=all_stops, regulation=regulation, bus_breaks=bus_breaks)
 
 
