@@ -94,6 +94,22 @@
         label {
             font-weight: bold;
         }
+        .submit-options {
+            margin: 1rem 0;
+            padding: 0.75rem;
+            background-color: #f5f5f5;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        .submit-options label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.95rem;
+        }
+        .submit-options input[type="checkbox"] {
+            margin: 0;
+        }
     </style>
 </head>
 <body>
@@ -122,6 +138,16 @@
             <div id="outbound-container" class="runs-section"></div>
             <button type="button" class="add-btn" onclick="addRun('outbound')">Add outbound run</button>
             <input type="hidden" id="outbound-count" name="outbound_count" value="0" />
+
+            <div class="form-section">
+                <h3>Submission Options</h3>
+                <div class="submit-options">
+                    <label>
+                        <input type="checkbox" id="skip-config" name="skip_configuration" value="true">
+                        Skip configuration step (use default settings)
+                    </label>
+                </div>
+            </div>
 
             <button type="submit" class="submit-btn">Generate Schedule</button>
         </form>

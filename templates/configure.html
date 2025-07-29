@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Schedule Configuration</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        header {
+            background-color: #3f51b5;
+            color: white;
+            padding: 1rem;
+        }
+        .container {
+            padding: 1rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .section {
+            background-color: #f5f5f5;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+        }
+        input[type="number"], select {
+            width: 100px;
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .description {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 0.25rem;
+        }
+        .button {
+            display: inline-block;
+            padding: 0.75rem 1.5rem;
+            margin: 0.5rem 0.5rem 0.5rem 0;
+            background-color: #3f51b5;
+            color: white;
+            text-decoration: none;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        .button:hover {
+            background-color: #303f9f;
+        }
+        .button.secondary {
+            background-color: #757575;
+        }
+        .button.secondary:hover {
+            background-color: #616161;
+        }
+        .summary {
+            background-color: #e3f2fd;
+            padding: 1rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+        }
+        .runs-preview {
+            max-height: 200px;
+            overflow-y: auto;
+            background-color: white;
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-top: 0.5rem;
+        }
+        .run-item {
+            display: inline-block;
+            background-color: #f0f0f0;
+            padding: 0.25rem 0.5rem;
+            margin: 0.125rem;
+            border-radius: 3px;
+            font-size: 0.85em;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Schedule Configuration</h1>
+    </header>
+    <div class="container">
+        <div class="summary">
+            <h3>Summary</h3>
+            <p><strong>Regulation:</strong> {{ 'EU assimilated rules (max 9 hrs/day)' if regulation == 'EU' else 'GB domestic rules (max 10 hrs/day)' }}</p>
+            <p><strong>Total runs:</strong> {{ runs|length }} ({{ runs|selectattr('section', 'equalto', 'inbound')|list|length }} inbound, {{ runs|selectattr('section', 'equalto', 'outbound')|list|length }} outbound)</p>
+            
+            <div>
+                <strong>Inbound runs:</strong>
+                <div class="runs-preview">
+                    {% for run in runs if run.section == 'inbound' %}
+                        <span class="run-item">{{ run.run_id }} ({{ run.start.strftime('%H:%M') }}-{{ run.end.strftime('%H:%M') }})</span>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <div>
+                <strong>Outbound runs:</strong>
+                <div class="runs-preview">
+                    {% for run in runs if run.section == 'outbound' %}
+                        <span class="run-item">{{ run.run_id }} ({{ run.start.strftime('%H:%M') }}-{{ run.end.strftime('%H:%M') }})</span>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <form method="POST" action="{{ url_for('generate_schedule') }}">
+            <!-- Hidden fields to pass through the run data -->
+            <input type="hidden" name="regulation" value="{{ regulation }}">
+            <input type="hidden" name="inbound_count" value="{{ runs|selectattr('section', 'equalto', 'inbound')|list|length }}">
+            <input type="hidden" name="outbound_count" value="{{ runs|selectattr('section', 'equalto', 'outbound')|list|length }}">
+            
+            {% set inbound_index = [] %}
+            {% set outbound_index = [] %}
+            {% for run in runs %}
+                {% if run.section == 'inbound' %}
+                    {% set _ = inbound_index.append(inbound_index|length) %}
+                    {% set i = inbound_index|length - 1 %}
+                    <input type="hidden" name="inbound_run_{{ i }}_name" value="{{ run.run_id }}">
+                    <input type="hidden" name="inbound_run_{{ i }}_start" value="{{ run.start.strftime('%H:%M') }}">
+                    <input type="hidden" name="inbound_run_{{ i }}_end" value="{{ run.end.strftime('%H:%M') }}">
+                    <input type="hidden" name="inbound_run_{{ i }}_stops" value="{{ run.stops|join('\n') }}">
+                {% else %}
+                    {% set _ = outbound_index.append(outbound_index|length) %}
+                    {% set i = outbound_index|length - 1 %}
+                    <input type="hidden" name="outbound_run_{{ i }}_name" value="{{ run.run_id }}">
+                    <input type="hidden" name="outbound_run_{{ i }}_start" value="{{ run.start.strftime('%H:%M') }}">
+                    <input type="hidden" name="outbound_run_{{ i }}_end" value="{{ run.end.strftime('%H:%M') }}">
+                    <input type="hidden" name="outbound_run_{{ i }}_stops" value="{{ run.stops|join('\n') }}">
+                {% endif %}
+            {% endfor %}
+
+            <div class="section">
+                <h3>Scheduling Configuration</h3>
+                  <div class="form-group">
+                    <label for="min_layover_time">Minimum Layover Time (minutes)</label>
+                    <input type="number" id="min_layover_time" name="min_layover_time" value="15" min="0" max="120">
+                    <div class="description">
+                        Default minimum time a bus must wait between the end of one run and the start of the next run. 
+                        This can be overridden per terminal below.
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Terminal-Specific Layover Times</label>
+                    <div style="background-color: #fff; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px; margin-top: 0.5rem;">
+                        <div style="margin-bottom: 0.5rem;">
+                            <label for="use_terminal_layovers" style="font-weight: normal; display: flex; align-items: center; gap: 0.5rem;">
+                                <input type="checkbox" id="use_terminal_layovers" name="use_terminal_layovers" value="true" onchange="toggleTerminalLayovers()">
+                                Enable terminal-specific layover times
+                            </label>
+                        </div>
+                        <div id="terminal-layover-config" style="display: none;">
+                            {% set all_terminals = [] %}
+                            {% for run in runs %}
+                                {% if run.stops %}
+                                    {% if run.stops[0] not in all_terminals %}{% set _ = all_terminals.append(run.stops[0]) %}{% endif %}
+                                    {% if run.stops[-1] not in all_terminals %}{% set _ = all_terminals.append(run.stops[-1]) %}{% endif %}
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% for terminal in all_terminals %}
+                            <div style="margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                                <label style="min-width: 120px; font-weight: normal;">{{ terminal }}:</label>
+                                <input type="number" name="terminal_layover_{{ terminal|replace(' ', '_')|replace('(', '')|replace(')', '') }}" 
+                                       value="15" min="0" max="180" style="width: 80px;">
+                                <span style="font-size: 0.85em; color: #666;">minutes</span>
+                            </div>
+                            {% endfor %}
+                            
+                            <div class="description" style="margin-top: 0.5rem;">
+                                Set specific layover times for each terminal. For example, set 90 minutes at the depot and 45 minutes at route endpoints.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="min_break_extension">Additional Break Time (minutes)</label>
+                    <input type="number" id="min_break_extension" name="min_break_extension" value="0" min="0" max="60">
+                    <div class="description">
+                        Additional time to add to mandatory regulatory breaks. For example, if EU rules require 45 minutes, 
+                        adding 15 minutes here would result in 60-minute breaks.
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="max_continuous_time">Maximum Continuous Driving (hours)</label>
+                    <select id="max_continuous_time" name="max_continuous_time">
+                        <option value="default">Use regulation default ({{ '4.5' if regulation == 'EU' else '5.5' }} hours)</option>
+                        <option value="3.0">3.0 hours</option>
+                        <option value="3.5">3.5 hours</option>
+                        <option value="4.0">4.0 hours</option>
+                        <option value="4.5">4.5 hours</option>
+                        <option value="5.0">5.0 hours</option>
+                        <option value="5.5">5.5 hours</option>
+                    </select>
+                    <div class="description">
+                        Override the regulation default for maximum continuous driving time before a break is required.
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="prefer_alternating">Route Preference</label>
+                    <select id="prefer_alternating" name="prefer_alternating">
+                        <option value="true">Prefer alternating inbound/outbound runs</option>
+                        <option value="false">No preference (minimize total buses)</option>
+                    </select>
+                    <div class="description">
+                        Whether to prefer assigning alternating inbound/outbound runs to the same bus to reduce dead running.
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>Advanced Options</h3>
+                
+                <div class="form-group">
+                    <label for="enforce_same_terminus">Enforce Same Terminus</label>
+                    <select id="enforce_same_terminus" name="enforce_same_terminus">
+                        <option value="false">Allow any route transitions</option>
+                        <option value="true">Only allow transitions between routes with shared termini</option>
+                    </select>
+                    <div class="description">
+                        If enabled, buses can only transition between runs that share a common start/end point (terminus).
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <button type="submit" class="button">Generate Schedule</button>
+                <a href="{{ url_for('index') }}" class="button secondary">Back to Input</a>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        function toggleTerminalLayovers() {
+            const checkbox = document.getElementById('use_terminal_layovers');
+            const config = document.getElementById('terminal-layover-config');
+            
+            if (checkbox.checked) {
+                config.style.display = 'block';
+            } else {
+                config.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
