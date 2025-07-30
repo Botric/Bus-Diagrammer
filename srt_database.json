@@ -86,20 +86,20 @@
   "bournemouth|branksome": {
     "from_station": "Bournemouth",
     "to_station": "Branksome",
-    "duration_minutes": 9,
-    "last_updated": "2025-07-29T22:14:37.171954"
+    "duration_minutes": 21,
+    "last_updated": "2025-07-29T23:18:15.101694"
   },
   "branksome|parkstonedorset": {
     "from_station": "Branksome",
     "to_station": "ParkstoneDorset",
-    "duration_minutes": 6,
-    "last_updated": "2025-07-29T22:14:37.190515"
+    "duration_minutes": 21,
+    "last_updated": "2025-07-29T23:18:15.102107"
   },
   "parkstonedorset|poole": {
     "from_station": "ParkstoneDorset",
     "to_station": "Poole",
-    "duration_minutes": 12,
-    "last_updated": "2025-07-29T22:14:37.212030"
+    "duration_minutes": 21,
+    "last_updated": "2025-07-29T23:18:15.102515"
   },
   "poole|parkstonedorset": {
     "from_station": "Poole",
@@ -116,8 +116,8 @@
   "branksome|bournemouth": {
     "from_station": "Branksome",
     "to_station": "Bournemouth",
-    "duration_minutes": 9,
-    "last_updated": "2025-07-29T22:14:37.271605"
+    "duration_minutes": 13,
+    "last_updated": "2025-07-29T23:19:29.701301"
   },
   "bournemouth|christchurch": {
     "from_station": "Bournemouth",
@@ -250,5 +250,167 @@
     "to_station": "Brockenhurst",
     "duration_minutes": 10,
     "last_updated": "2025-07-29T23:40:47.673464"
+  },
+  "bournemouth|pokesdown": {
+    "from_station": "Bournemouth",
+    "to_station": "Pokesdown",
+    "duration_minutes": 10,
+    "last_updated": "2025-07-29T23:17:43.136997"
+  },
+  "pokesdown|christchurch": {
+    "from_station": "Pokesdown",
+    "to_station": "Christchurch",
+    "duration_minutes": 10,
+    "last_updated": "2025-07-29T23:17:43.137320"
+  },
+  "christchurch|hintonadmiral": {
+    "from_station": "Christchurch",
+    "to_station": "HintonAdmiral",
+    "duration_minutes": 10,
+    "last_updated": "2025-07-29T23:17:43.138049"
+  },
+  "hintonadmiral|newmilton": {
+    "from_station": "HintonAdmiral",
+    "to_station": "NewMilton",
+    "duration_minutes": 12,
+    "last_updated": "2025-07-29T23:17:43.138236"
+  },
+  "newmilton|sway": {
+    "from_station": "NewMilton",
+    "to_station": "Sway",
+    "duration_minutes": 10,
+    "last_updated": "2025-07-29T23:17:43.138412"
+  },
+  "sway|brockenhurst": {
+    "from_station": "Sway",
+    "to_station": "Brockenhurst",
+    "duration_minutes": 12,
+    "last_updated": "2025-07-29T23:17:43.138611"
+  },
+  "brockenhurst|ashurstnewforest": {
+    "from_station": "Brockenhurst",
+    "to_station": "AshurstNewForest",
+    "duration_minutes": 16,
+    "last_updated": "2025-07-29T23:17:43.138813"
+  },
+  "ashurstnewforest|totton": {
+    "from_station": "AshurstNewForest",
+    "to_station": "Totton",
+    "duration_minutes": 8,
+    "last_updated": "2025-07-29T23:17:43.138996"
+  },
+  "totton|southamptoncentral": {
+    "from_station": "Totton",
+    "to_station": "SouthamptonCentral",
+    "duration_minutes": 12,
+    "last_updated": "2025-07-29T23:17:43.139826"
+  },
+  "southamptoncentral|southamptonairportparkwa": {
+    "from_station": "SouthamptonCentral",
+    "to_station": "SouthamptonAirportParkwa",
+    "duration_minutes": 20,
+    "last_updated": "2025-07-29T23:19:29.700538"
+  },
+  "southamptonairportparkwa|eastleigh": {
+    "from_station": "SouthamptonAirportParkwa",
+    "to_station": "Eastleigh",
+    "duration_minutes": 6,
+    "last_updated": "2025-07-29T23:17:43.139561"
+  },
+  "southamptoncentral|totton": {
+    "from_station": "SouthamptonCentral",
+    "to_station": "Totton",
+    "duration_minutes": 18,
+    "last_updated": "2025-07-29T23:18:15.097343"
+  },
+  "totton|brockenhurst": {
+    "from_station": "Totton",
+    "to_station": "Brockenhurst",
+    "duration_minutes": 18,
+    "last_updated": "2025-07-29T23:18:15.097847"
+  },
+  "brockenhurst|newmilton": {
+    "from_station": "Brockenhurst",
+    "to_station": "NewMilton",
+    "duration_minutes": 19,
+    "last_updated": "2025-07-29T23:18:15.109401"
+  },
+  "newmilton|christchurch": {
+    "from_station": "NewMilton",
+    "to_station": "Christchurch",
+    "duration_minutes": 19,
+    "last_updated": "2025-07-29T23:18:15.109858"
+  },
+  "christchurch|pokesdown": {
+    "from_station": "Christchurch",
+    "to_station": "Pokesdown",
+    "duration_minutes": 19,
+    "last_updated": "2025-07-29T23:18:15.110319"
+  },
+  "pokesdown|bournemouth": {
+    "from_station": "Pokesdown",
+    "to_station": "Bournemouth",
+    "duration_minutes": 19,
+    "last_updated": "2025-07-29T23:18:15.110763"
+  },
+  "totton|ashurstnewforest": {
+    "from_station": "Totton",
+    "to_station": "AshurstNewForest",
+    "duration_minutes": 7,
+    "last_updated": "2025-07-29T23:18:15.103030"
+  },
+  "ashurstnewforest|brockenhurst": {
+    "from_station": "AshurstNewForest",
+    "to_station": "Brockenhurst",
+    "duration_minutes": 16,
+    "last_updated": "2025-07-29T23:18:15.103434"
+  },
+  "brockenhurst|sway": {
+    "from_station": "Brockenhurst",
+    "to_station": "Sway",
+    "duration_minutes": 12,
+    "last_updated": "2025-07-29T23:18:15.103833"
+  },
+  "sway|newmilton": {
+    "from_station": "Sway",
+    "to_station": "NewMilton",
+    "duration_minutes": 10,
+    "last_updated": "2025-07-29T23:18:15.104235"
+  },
+  "newmilton|hintonadmiral": {
+    "from_station": "NewMilton",
+    "to_station": "HintonAdmiral",
+    "duration_minutes": 12,
+    "last_updated": "2025-07-29T23:18:15.104640"
+  },
+  "hintonadmiral|christchurch": {
+    "from_station": "HintonAdmiral",
+    "to_station": "Christchurch",
+    "duration_minutes": 10,
+    "last_updated": "2025-07-29T23:18:15.105046"
+  },
+  "southamptoncentral|brockenhurst": {
+    "from_station": "SouthamptonCentral",
+    "to_station": "Brockenhurst",
+    "duration_minutes": 19,
+    "last_updated": "2025-07-29T23:18:15.108734"
+  },
+  "southamptonairportparkwa|southamptoncentral": {
+    "from_station": "SouthamptonAirportParkwa",
+    "to_station": "SouthamptonCentral",
+    "duration_minutes": 20,
+    "last_updated": "2025-07-29T23:18:48.339070"
+  },
+  "southamptonairportparkwa|bournemouth": {
+    "from_station": "SouthamptonAirportParkwa",
+    "to_station": "Bournemouth",
+    "duration_minutes": 49,
+    "last_updated": "2025-07-29T23:18:48.339955"
+  },
+  "bournemouth|southamptonairportparkwa": {
+    "from_station": "Bournemouth",
+    "to_station": "SouthamptonAirportParkwa",
+    "duration_minutes": 50,
+    "last_updated": "2025-07-29T23:19:29.702168"
   }
 }
